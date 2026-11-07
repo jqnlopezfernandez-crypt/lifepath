@@ -36,7 +36,8 @@ export type EffectKind =
   | 'dual'      // fuego en el lado derecho, hielo en el izquierdo
   | 'explosions'// explosiones en el contorno con humo y chispas
   | 'decay'     // fragmentos que se desintegran desde la figura
-  | 'cracks';   // grietas de energía que se abren por el suelo
+  | 'cracks'    // grietas de energía que se abren por el suelo
+  | 'presence'; // sombra enorme que respira detrás de la figura (o la figura de fondo importada)
 
 /** Cómo se mueve la figura en reposo. */
 export type MotionStyle =
@@ -106,26 +107,16 @@ export const ROUTES: RouteConfig[] = [
     name: 'Ruta Stark',
     levels: [
       // Orden cronológico de las películas.
-      // El genio: escaneo holográfico y motas de datos a su alrededor.
-      L(1, 'Tony Stark', '#9fd8ff', '#5cc8ff', ['scan', 'orbit'], 'calm', 'glow', false, f(1.0, 50)),
-      // Hecha en una cueva: chispas de soldadura y humo, metal pesado.
+      L(1, 'Tony Stark', '#9fd8ff', '#5cc8ff', ['scan'], 'calm', 'glow', false, f(1.0, 50)),
       L(2, 'Mark I', '#c9d0dd', '#ffb067', ['sparks', 'smoke'], 'heavy', 'glow', true, f(2.4, 15)),
-      // La primera de verdad: calor de los propulsores y escaneo del sistema.
       L(3, 'Mark III', '#ff5a4f', '#ffc857', ['embers', 'scan'], 'hover', 'fire', true, f(2.5, 12)),
-      // La armadura maletín: destellos de montaje y chispas.
-      L(4, 'Mark V', '#e6ebf2', '#ff5a4f', ['starburst', 'sparks', 'scan'], 'agile', 'glow', true, f(1.4, 20)),
-      // El nuevo reactor: pulso de energía cian, como un latido.
-      L(5, 'Mark VI', '#5ce1ff', '#ff5a4f', ['pulse', 'orbit', 'sparks'], 'hover', 'electric', true, f(2.4, 12)),
-      // Piezas que vuelan solas: chispas doradas, estelas y destellos.
-      L(6, 'Mark XLII', '#ffc857', '#ff5a4f', ['sparks', 'streaks', 'starburst'], 'hover', 'divine', true, f(2.5, 12)),
-      // El tanque: pisotones que sacuden el suelo, polvo y brasas.
-      L(7, 'Hulkbuster', '#e0413a', '#ffb067', ['stomp', 'embers', 'sparks'], 'heavy', 'fire', true, f(2.0, 15)),
-      // Nanotecnología: partículas que se ensamblan sobre la armadura, y rayos.
-      L(8, 'Mark L', '#5ce1ff', '#b0283a', ['hex', 'lightning', 'orbit'], 'calm', 'electric', true, f(2.4, 10)),
-      // La definitiva: nanotecnología, energía y estelas de vuelo.
-      L(9, 'Mark LXXXV', '#ffc857', '#5ce1ff', ['hex', 'embers', 'lightning', 'streaks'], 'hover', 'divine', true, f(2.0, 15)),
-      // El final: seis gemas en órbita que destellan a la vez, energía cósmica.
-      L(10, 'Tony Stark — Endgame', '#ffd166', '#b28dff', ['stones', 'cosmic', 'lightning'], 'menace', 'divine', true, f(1.15, 35))
+      L(4, 'Mark V', '#e6ebf2', '#ff5a4f', ['sparks', 'starburst'], 'agile', 'glow', true, f(1.4, 20)),
+      L(5, 'Mark VI', '#5ce1ff', '#ff5a4f', ['scan', 'sparks'], 'hover', 'electric', true, f(2.4, 12)),
+      L(6, 'Mark XLII', '#ffc857', '#ff5a4f', ['embers', 'starburst'], 'hover', 'divine', true, f(2.5, 12)),
+      L(7, 'Hulkbuster', '#e0413a', '#ffb067', ['stomp', 'sparks'], 'heavy', 'fire', true, f(2.0, 15)),
+      L(8, 'Mark L', '#5ce1ff', '#b0283a', ['hex', 'lightning'], 'calm', 'electric', true, f(2.4, 10)),
+      L(9, 'Mark LXXXV', '#ffc857', '#5ce1ff', ['hex', 'embers', 'lightning'], 'hover', 'divine', true, f(2.0, 15)),
+      L(10, 'Tony Stark — Endgame', '#ffd166', '#b28dff', ['stones', 'cosmic'], 'menace', 'divine', true, f(1.15, 35))
     ]
   },
   {
@@ -133,26 +124,26 @@ export const ROUTES: RouteConfig[] = [
     number: 2,
     name: 'Ruta Jujutsu',
     levels: [
-      // Sombras: niebla oscura que se arrastra alrededor.
+      // Niebla oscura que se arrastra alrededor, con distorsión.
       L(1, 'Megumi Fushiguro', '#7b7dff', '#1c1d4a', ['mist'], 'calm', 'dark', false, f(1.0, 50)),
-      // Golpes: chispazos negros con brillo rojo y polvo de impacto.
-      L(2, 'Yuji Itadori', '#ff2e3f', '#1a0306', ['blackflash', 'dust', 'sparks'], 'agile', 'fire', false, f(1.3, 10)),
+      // Chispazo negro: carga, impacto y rayos negros con brillo rojo.
+      L(2, 'Yuji Itadori', '#ff2e3f', '#1a0306', ['blackflash', 'sparks'], 'agile', 'fire', false, f(1.3, 10)),
       // Velocidad por fotogramas: copias fantasma y estelas.
       L(3, "Naoya Zen'in", '#c6f36b', '#7fe3b8', ['afterimage', 'streaks'], 'agile', 'electric', false, f(1.2, 10)),
-      // Sangre: anillos de gotas en órbita, con estela.
+      // Anillos de sangre en órbita.
       L(4, 'Choso', '#d1243b', '#5a0d18', ['drops'], 'calm', 'dark', false, f(2.0, 20)),
       // Alma inestable: la figura se deforma, humo y sombras.
-      L(5, 'Mahito', '#8fb3c9', '#2a3550', ['smoke', 'shadow', 'cosmic'], 'warp', 'dark', false, f(1.6, 20)),
-      // Juicio: columna de luz dorada que cae sobre él y golpe seco en el suelo, con destellos.
-      L(6, 'Hiromi Higuruma', '#ffd166', '#fff4c2', ['verdict', 'starburst', 'orbit'], 'calm', 'divine', false, f(1.2, 10)),
-      // Sin energía, pura velocidad: copias fantasma, estelas y destellos de filo.
-      L(7, 'Toji Fushiguro', '#b8c2cf', '#6b4c7a', ['afterimage', 'streaks', 'starburst'], 'agile', 'glow', false, f(2.0, 15)),
-      // Reservas enormes de energía: aura oscura con destellos blanco azulados, pulsos y brillos de filo.
-      L(8, 'Yuta Okkotsu', '#bfe3ff', '#0b1030', ['pulse', 'starburst', 'smoke'], 'calm', 'dark', false, f(1.3, 12)),
-      // Cortes invisibles: ráfagas de tajos que cruzan toda la pantalla; lenguas de fuego y brasas.
-      L(9, 'Sukuna', '#ff2e4d', '#3b0a12', ['slashes', 'flames', 'embers'], 'menace', 'fire', false, f(2.3, 12)),
-      // Barrera y técnica de los dos colores: ondas que distorsionan, orbes azul y rojo que se fusionan en violeta.
-      L(10, 'Satoru Gojo', '#3fb6ff', '#b9e6ff', ['orbs', 'ripples', 'cosmic'], 'calm', 'divine', false, f(1.1, 10))
+      L(5, 'Mahito', '#8fb3c9', '#2a3550', ['smoke', 'shadow'], 'warp', 'dark', false, f(1.6, 20)),
+      // Columna de luz dorada que cae sobre él, con destellos.
+      L(6, 'Hiromi Higuruma', '#ffd166', '#fff4c2', ['verdict', 'starburst'], 'calm', 'divine', false, f(1.2, 10)),
+      // Pura velocidad: copias fantasma y destellos de filo.
+      L(7, 'Toji Fushiguro', '#b8c2cf', '#6b4c7a', ['afterimage', 'starburst'], 'agile', 'glow', false, f(2.0, 15)),
+      // Presencia enorme a su espalda, pulsos de energía y destellos de filo.
+      L(8, 'Yuta Okkotsu', '#bfe3ff', '#0b1030', ['presence', 'pulse', 'starburst'], 'calm', 'dark', false, f(1.3, 12)),
+      // Ráfagas de tajos por toda la pantalla y fuego.
+      L(9, 'Sukuna', '#ff2e4d', '#3b0a12', ['slashes', 'flames'], 'menace', 'fire', false, f(2.3, 12)),
+      // Ondas de barrera y orbes azul y rojo que se fusionan en violeta.
+      L(10, 'Satoru Gojo', '#3fb6ff', '#b9e6ff', ['orbs', 'ripples'], 'calm', 'divine', false, f(1.1, 10))
     ]
   },
   {
@@ -160,26 +151,16 @@ export const ROUTES: RouteConfig[] = [
     number: 3,
     name: 'Ruta Héroes',
     levels: [
-      // Endurecimiento: reflejo metálico, chispas al impacto y destellos de dureza.
-      L(1, 'Kirishima — Red Riot', '#ff5a4f', '#c9d0dd', ['sparks', 'starburst', 'dust'], 'heavy', 'glow', true, f(1.4, 15)),
-      // Mitad fuego (derecha) y mitad hielo (izquierda).
+      L(1, 'Kirishima — Red Riot', '#ff5a4f', '#c9d0dd', ['sparks', 'starburst'], 'heavy', 'glow', true, f(1.4, 15)),
       L(2, 'Shoto Todoroki', '#ff6b3d', '#7fd6ff', ['dual', 'flames', 'frost'], 'calm', 'glow', false, f(1.4, 15)),
-      // Permeación: atraviesa la materia; copias fantasma y ondas al cruzar.
-      L(3, 'Mirio Togata — Lemillion', '#ffd166', '#9fd8ff', ['afterimage', 'ripples', 'dust'], 'agile', 'glow', false, f(1.4, 15)),
-      // Alas: plumas rojas que caen girando y estelas de velocidad.
+      L(3, 'Mirio Togata — Lemillion', '#ffd166', '#9fd8ff', ['afterimage', 'ripples'], 'agile', 'glow', false, f(1.4, 15)),
       L(4, 'Hawks', '#e0413a', '#ffb067', ['feathers', 'streaks'], 'hover', 'glow', false, f(1.4, 15)),
-      // El héroe n.º 1 en llamas: lenguas de fuego, brasas y humo.
-      L(5, 'Endeavor', '#ff7a1a', '#ffd166', ['flames', 'embers', 'smoke'], 'heavy', 'fire', false, f(1.4, 15)),
-      // Llamas azules que también le queman a él: fuego azul y brasas que se apagan en gris.
-      L(6, 'Dabi', '#4fb3ff', '#1d2b6b', ['flames', 'embers', 'decay'], 'menace', 'fire', false, f(1.4, 15)),
-      // Explosiones en el contorno, humo y chispas.
-      L(7, 'Bakugo — Máximo potencial', '#ff8a3d', '#ffd166', ['explosions', 'sparks', 'smoke'], 'agile', 'fire', false, f(1.4, 15)),
-      // Fuerza pura: pisotones, ondas de choque y polvo.
-      L(8, 'All Might — Prime', '#ffd166', '#3c7dff', ['stomp', 'pulse', 'streaks'], 'heavy', 'divine', false, f(1.4, 15)),
-      // Desintegración: fragmentos que se deshacen y grietas por el suelo.
-      L(9, 'Shigaraki — Forma final', '#c7c9cf', '#3a2a4a', ['decay', 'cracks', 'shadow'], 'menace', 'dark', false, f(1.4, 15)),
-      // El cierre: rayos verdes por la silueta, chispas, ondas y polvo de impacto.
-      L(10, 'Deku — Máximo potencial', '#5ee0a8', '#c6f36b', ['lightning', 'sparks', 'pulse', 'dust'], 'agile', 'electric', false, f(1.4, 15))
+      L(5, 'Endeavor', '#ff7a1a', '#ffd166', ['flames', 'embers'], 'heavy', 'fire', false, f(1.4, 15)),
+      L(6, 'Dabi', '#4fb3ff', '#1d2b6b', ['flames', 'decay'], 'menace', 'fire', false, f(1.4, 15)),
+      L(7, 'Bakugo — Máximo potencial', '#ff8a3d', '#ffd166', ['explosions', 'smoke'], 'agile', 'fire', false, f(1.4, 15)),
+      L(8, 'All Might — Prime', '#ffd166', '#3c7dff', ['stomp', 'pulse'], 'heavy', 'divine', false, f(1.4, 15)),
+      L(9, 'Shigaraki — Forma final', '#c7c9cf', '#3a2a4a', ['decay', 'shadow'], 'menace', 'dark', false, f(1.4, 15)),
+      L(10, 'Deku — Máximo potencial', '#5ee0a8', '#c6f36b', ['lightning', 'sparks', 'pulse'], 'agile', 'electric', false, f(1.4, 15))
     ]
   }
 ];
@@ -193,6 +174,8 @@ export function routeByNumber(n: number): RouteConfig | undefined {
 }
 
 export const imageKey = (route: RouteId, level: number) => `${route}-${level}`;
+/** Figura de fondo opcional que aparece detrás del personaje. */
+export const companionKey = (route: RouteId, level: number) => `${route}-${level}-fondo`;
 
 /** Nivel de espectacularidad (1–4) según el nivel del personaje. */
 export function tierFor(level: number): 1 | 2 | 3 | 4 {

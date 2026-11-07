@@ -1,6 +1,6 @@
 import { unzipSync } from 'fflate';
 import { imageDb } from '../data/db';
-import { imageKey, routeByNumber, type RouteId } from './routes';
+import { companionKey, imageKey, routeByNumber, type RouteId } from './routes';
 
 const MAX_SIDE = 1600;
 const IMAGE_RE = /\.(png|webp)$/i;
@@ -85,6 +85,11 @@ export async function importFiles(files: File[], route: RouteId): Promise<Import
     await store(routeFromPath(file.name) ?? route, level, file, report);
   }
   return report;
+}
+
+/** Guarda la figura de fondo (aparición detrás del personaje) de un nivel. */
+export async function importCompanion(file: File, route: RouteId, level: number): Promise<void> {
+  await imageDb.put(companionKey(route, level), await downscale(file));
 }
 
 /** Sustituye la imagen de un nivel concreto. */

@@ -1,9 +1,9 @@
 import { useRef, useState, type ChangeEvent, type MouseEvent, type ReactNode } from 'react';
 import { useStore } from '../data/store';
-import { ROUTES, getRoute, imageKey, type Framing, type RouteId } from '../characters/routes';
+import { ROUTES, companionKey, getRoute, imageKey, type Framing, type RouteId } from '../characters/routes';
 import { analyzeImage, autoFraming, detectBrightSpots, stageToImage } from '../characters/silhouette';
 import { useSilhouette } from '../characters/useSilhouette';
-import { importFiles, importSingle, importZip, type ImportReport } from '../characters/imageImport';
+import { importCompanion, importFiles, importSingle, importZip, type ImportReport } from '../characters/imageImport';
 import { CharacterStage } from '../characters/CharacterStage';
 import { imageDb } from '../data/db';
 import { Icon } from '../components/Icon';
@@ -78,6 +78,15 @@ export function SettingsScreen() {
       resetOverride(k);
       return { imported: [k], skipped: [] };
     });
+  };
+
+  // ── Figura de fondo ──
+  const companionRef = useRef<HTMLInputElement>(null);
+  const cKey = companionKey(editRoute, editLevel);
+  const onCompanion = (e: ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = '';
+    if (f) run(async () => { await importCompanion(f, editRoute, editLevel); });
   };
 
   // ── Puntos de luz ──
@@ -306,6 +315,28 @@ export function SettingsScreen() {
             Quitar imagen de este nivel
           </button>
         )}
+
+        <div style={{ marginTop: 18, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <span style={{ fontSize: 13, color: 'var(--muted)', lineHeight: 1.45 }}>
+            Figura de fondo — una segunda imagen que aparece detrás del personaje como una presencia fantasmal, oscura y translúcida.
+          </span>
+          <div style={{ display: 'grid', gridTemplateColumns: images[cKey] ? '1fr 1fr' : '1fr', gap: 8 }}>
+            <button type="button" className="btn" disabled={busy} onClick={() => companionRef.current?.click()}>
+              {images[cKey] ? 'Cambiar figura de fondo' : 'Añadir figura de fondo'}
+            </button>
+            {images[cKey] && (
+              <button
+                type="button"
+                className="btn"
+                style={{ color: '#ff9b9b' }}
+                onClick={async () => { await imageDb.del(cKey); await reloadImages(); }}
+              >
+                Quitar
+              </button>
+            )}
+          </div>
+          <input ref={companionRef} type="file" accept="image/png,image/webp" hidden onChange={onCompanion} />
+        </div>
       </Section>
 
       <Section title="Modo prueba" note="Muestra en Inicio un selector de ruta y nivel para ver cualquier personaje al momento. No cambia tu XP.">

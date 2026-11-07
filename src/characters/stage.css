@@ -29,59 +29,6 @@
   50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
 }
 
-.stage-rays {
-  position: absolute; left: 50%; top: 46%;
-  width: 150%; aspect-ratio: 1;
-  transform: translate(-50%, -50%);
-  background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--lv-accent) 22%, transparent) 0deg 4deg, transparent 4deg 22deg);
-  -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 52%);
-  mask-image: radial-gradient(circle, #000 0%, transparent 52%);
-  opacity: var(--rays-opacity);
-  animation: rays-spin 40s linear infinite;
-}
-@keyframes rays-spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
-
-.stage-halo {
-  position: absolute; left: 50%; top: 44%;
-  width: 78%; aspect-ratio: 1;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  border: 1px solid color-mix(in srgb, var(--lv-accent) 55%, transparent);
-  box-shadow: 0 0 30px color-mix(in srgb, var(--lv-accent) 35%, transparent), inset 0 0 30px color-mix(in srgb, var(--lv-accent) 25%, transparent);
-  animation: halo-pulse 3s ease-in-out infinite;
-}
-.stage-halo.dashed {
-  width: 92%;
-  border: 1.5px dashed color-mix(in srgb, var(--lv-accent2) 45%, transparent);
-  box-shadow: none;
-  animation: rays-spin 28s linear infinite reverse;
-}
-@keyframes halo-pulse {
-  0%, 100% { opacity: 0.45; transform: translate(-50%, -50%) scale(0.98); }
-  50% { opacity: 0.95; transform: translate(-50%, -50%) scale(1.03); }
-}
-
-.stage-ground {
-  position: absolute; left: 50%; bottom: 6%;
-  width: 70%; height: 14%;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.65) 0%, transparent 70%);
-}
-.stage-wave {
-  position: absolute; left: 50%; bottom: 8%;
-  width: 40%; height: 7%;
-  transform: translateX(-50%);
-  border-radius: 50%;
-  border: 2px solid color-mix(in srgb, var(--lv-accent) 70%, transparent);
-  animation: wave 2.8s ease-out infinite;
-}
-.stage-wave.w2 { animation-delay: 1.4s; }
-@keyframes wave {
-  0% { opacity: 0.9; transform: translateX(-50%) scale(0.5); }
-  100% { opacity: 0; transform: translateX(-50%) scale(2.2); }
-}
-
 .stage-flash {
   background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--lv-accent) 45%, transparent) 0%, transparent 60%);
   opacity: 0;
@@ -212,55 +159,33 @@
   55%, 100% { background-position: -10% 0; }
 }
 
-/* ───────── Movimiento propio de cada personaje ───────── */
+/* ───────── Movimiento propio de cada personaje ─────────
+   Sutil a propósito: respiración y peso, no balanceos de muñeco. */
 
-.motion-calm .m-bob { animation: bob-calm 6s ease-in-out infinite; }
-.motion-calm .m-sway { animation: sway-calm 9s ease-in-out infinite; }
-@keyframes bob-calm { 0%, 100% { transform: translateY(0) scaleY(1); } 50% { transform: translateY(calc(var(--amp) * -4px)) scaleY(1.006); } }
-@keyframes sway-calm { 0%, 100% { transform: rotate(-0.3deg); } 50% { transform: rotate(0.3deg); } }
+.motion-calm .m-bob { animation: breathe 6.5s ease-in-out infinite; }
+@keyframes breathe { 0%, 100% { transform: scale(1, 1); } 50% { transform: scale(1.004, 1.012); } }
 
-.motion-hover .m-bob { animation: bob-hover 3.4s ease-in-out infinite; }
-.motion-hover .m-sway { animation: sway-hover 5.3s ease-in-out infinite; }
-@keyframes bob-hover { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(calc(var(--amp) * -11px)); } }
-@keyframes sway-hover {
-  0%, 100% { transform: rotate(-0.9deg) translateX(-2px); }
-  50% { transform: rotate(0.9deg) translateX(2px); }
-}
+.motion-hover .m-bob { animation: hover 4.8s ease-in-out infinite; }
+@keyframes hover { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(calc(var(--amp) * -7px)); } }
 
-.motion-heavy .m-bob { animation: bob-heavy 4.6s ease-in-out infinite; }
-.motion-heavy .m-sway { animation: sway-heavy 4.6s ease-in-out infinite; }
-@keyframes bob-heavy {
-  0%, 100% { transform: scale(1, 1); }
-  40% { transform: scale(1.006, 1.016); }
-  55% { transform: scale(1.004, 1.012); }
-}
-@keyframes sway-heavy { 0%, 100% { transform: translateY(0); } 45% { transform: translateY(-2px); } 70% { transform: translateY(1px); } }
+.motion-heavy .m-bob { animation: heavy 5.2s cubic-bezier(.45,0,.3,1) infinite; }
+@keyframes heavy { 0%, 100% { transform: scale(1, 1); } 42% { transform: scale(1.006, 1.018); } 58% { transform: scale(1.004, 1.014); } }
 
-.motion-agile .m-bob { animation: bob-agile 2.2s ease-in-out infinite; }
-.motion-agile .m-sway { animation: sway-agile 3.1s ease-in-out infinite; }
-@keyframes bob-agile { 0%, 100% { transform: translateY(0); } 30% { transform: translateY(calc(var(--amp) * -5px)); } 60% { transform: translateY(calc(var(--amp) * 1px)); } }
-@keyframes sway-agile {
-  0%, 100% { transform: rotate(-1.4deg) translateX(-3px); }
-  45% { transform: rotate(1.2deg) translateX(3px); }
-  70% { transform: rotate(0.2deg) translateX(0); }
-}
+.motion-agile .m-bob { animation: agile 3.2s ease-in-out infinite; }
+@keyframes agile { 0%, 100% { transform: translateY(0) scale(1); } 40% { transform: translateY(calc(var(--amp) * -3px)) scale(1.006); } }
 
-.motion-menace .m-bob { animation: bob-menace 7s ease-in-out infinite; }
-.motion-menace .m-sway { animation: sway-menace 7s ease-in-out infinite; }
-@keyframes bob-menace { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.025) translateY(-3px); } }
-@keyframes sway-menace { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-1.2deg); } }
-.tier-3.motion-menace .m-sway, .tier-4.motion-menace .m-sway { animation: sway-menace 7s ease-in-out infinite, shiver 0.18s linear infinite; }
-@keyframes shiver { 0%, 100% { translate: 0 0; } 50% { translate: 0.6px -0.4px; } }
+.motion-menace .m-bob { animation: menace 7.5s ease-in-out infinite; }
+@keyframes menace { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.022) translateY(-2px); } }
 
 /* Inestable: la figura se deforma levemente */
 .motion-warp .m-bob { animation: warp-a 5.5s ease-in-out infinite; }
 .motion-warp .m-sway { animation: warp-b 3.7s ease-in-out infinite; }
 @keyframes warp-a {
   0%, 100% { transform: skewX(0deg) scale(1, 1); }
-  25% { transform: skewX(-1.6deg) scale(1.015, 0.99); }
-  60% { transform: skewX(1.2deg) scale(0.99, 1.02); }
+  25% { transform: skewX(-1.4deg) scale(1.012, 0.992); }
+  60% { transform: skewX(1deg) scale(0.992, 1.016); }
 }
-@keyframes warp-b { 0%, 100% { transform: rotate(0.4deg); } 50% { transform: rotate(-0.8deg) translateY(-3px); } }
+@keyframes warp-b { 0%, 100% { transform: rotate(0.3deg); } 50% { transform: rotate(-0.6deg) translateY(-2px); } }
 
 /* Copias fantasma (velocidad) */
 .stage-img.ghost { filter: none; opacity: 0; mix-blend-mode: screen; }
@@ -270,6 +195,58 @@
   0% { opacity: 0.35; transform: translateX(-7%); }
   50% { opacity: 0.15; transform: translateX(-3%); }
   100% { opacity: 0; transform: translateX(0); }
+}
+
+/* ───────── Contraluz (nivel 7+): la silueta, más grande y muy difuminada, detrás ───────── */
+.aura-wrap.backlight {
+  filter: blur(calc(var(--aura-blur) * 4.5));
+  opacity: 0.5;
+  transform-origin: 50% 40%;
+  animation: backlight 6s ease-in-out infinite;
+}
+.aura-wrap.backlight .aura-mask { background: linear-gradient(to bottom, #fff, var(--lv-accent) 45%, var(--lv-accent2)); }
+@keyframes backlight {
+  0%, 100% { transform: scale(1.1) translateY(-2%); opacity: 0.38; }
+  50% { transform: scale(1.16) translateY(-3%); opacity: 0.6; }
+}
+
+/* ───────── Presencia: una sombra enorme que respira detrás de la figura ───────── */
+.presence {
+  position: absolute; inset: 0;
+  transform: translateY(-16%) scale(1.55);
+  transform-origin: 50% 75%;
+  animation: presence 9s ease-in-out infinite;
+}
+.presence-body, .presence-glow { position: absolute; inset: 0; }
+.presence-body { filter: blur(3px); opacity: 0.92; }
+.presence-body .aura-mask {
+  background: linear-gradient(to bottom, #000 0%, color-mix(in srgb, var(--lv-accent2) 80%, #000) 55%, transparent 92%);
+}
+.presence-glow { filter: blur(14px); opacity: 0.55; transform: scale(1.03); }
+.presence-glow .aura-mask { background: var(--lv-accent); }
+@keyframes presence {
+  0%, 100% { transform: translateY(-16%) scale(1.55); opacity: 0.55; }
+  45% { transform: translateY(-18%) scale(1.6); opacity: 0.9; }
+  60% { transform: translateY(-17.5%) scale(1.59); opacity: 0.75; }
+}
+
+/* ───────── Figura de fondo importada (aparición fantasmal) ───────── */
+.companion {
+  position: absolute; inset: -10% -6% 12%;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 18%, #000 55%, transparent 92%);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 18%, #000 55%, transparent 92%);
+  animation: companion 8s ease-in-out infinite;
+}
+.companion img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  filter: brightness(0.5) saturate(0.55) contrast(1.15) drop-shadow(0 0 18px var(--lv-accent)) blur(0.6px);
+  -webkit-user-drag: none;
+}
+@keyframes companion {
+  0%, 100% { opacity: 0.42; transform: translateY(0) scale(1); }
+  50% { opacity: 0.72; transform: translateY(-2.5%) scale(1.03); }
 }
 
 /* Puntos de luz (ojos, núcleos de energía) */

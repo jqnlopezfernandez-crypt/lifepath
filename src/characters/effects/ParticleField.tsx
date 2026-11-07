@@ -42,7 +42,7 @@ const BASE_COUNT: Record<EffectKind, number> = {
   mist: 12, flames: 28, decay: 44,
   // Los efectos de técnica son eventos, no partículas continuas.
   orbs: 0, ripples: 0, slashes: 0, blackflash: 0, beam: 0, pool: 0, pulse: 0, starburst: 0, afterimage: 0, verdict: 0,
-  scan: 0, hex: 70, stomp: 0, stones: 0, dual: 0, explosions: 0, cracks: 0
+  scan: 0, hex: 70, stomp: 0, stones: 0, dual: 0, explosions: 0, cracks: 0, presence: 0
 };
 
 const STONE_COLORS = ['#b04bff', '#3f8cff', '#ff3b3b', '#ff9a2e', '#3fe07a', '#ffd23f'];
@@ -422,8 +422,8 @@ export function ParticleField({ effects, accent, accent2, intensity, silhouette,
     const verdict = () => {
       ev({ type: 'spot', x: cx(), y: 0, size: W * 0.42, max: 1.6, color: accent });
       later(0.55, () => {
-        ev({ type: 'shock', x: cx(), y: groundY, size: W * 0.7, max: 0.7, color: accent });
-        ev({ type: 'flash', x: cx(), y: groundY - 10, size: 80 * k, max: 0.45, color: accent });
+        ev({ type: 'flash', x: cx(), y: cy() - H * 0.08, size: 110 * k, max: 0.6, color: accent });
+        ev({ type: 'pulse', x: cx(), y: cy(), size: W * 0.6, max: 0.9, color: accent });
         for (let i = 0; i < 18; i++) {
           const p = spawn('dust');
           p.x = cx() + rand(-W * 0.2, W * 0.2); p.y = groundY;
@@ -441,6 +441,33 @@ export function ParticleField({ effects, accent, accent2, intensity, silhouette,
     const drawGlow = (x: number, y: number, r: number, color: string, alpha: number, soft = false) => {
       ctx.globalAlpha = alpha;
       ctx.drawImage(glowSprite(color, soft), x - r, y - r, r * 2, r * 2);
+    };
+    // Destello de lente: núcleo brillante con una raya horizontal suave (anamórfica).
+    const glint = (x: number, y: number, r: number, color: string, alpha: number) => {
+      const a = Math.max(0, Math.min(1, alpha));
+      ctx.globalAlpha = a * 0.8;
+      ctx.drawImage(glowSprite(color), x - r * 5, y - r * 0.28, r * 10, r * 0.56);
+      ctx.globalAlpha = a * 0.35;
+      ctx.drawImage(glowSprite(color), x - r * 0.22, y - r * 2.2, r * 0.44, r * 4.4);
+      drawGlow(x, y, r * 1.3, color, a);
+      drawGlow(x, y, r * 0.45, '#ffffff', a);
+    };
+    // Onda de luz suave (no una línea): banda difusa que se expande.
+    const softRing = (x: number, y: number, r: number, squash: number, width: number, color: string, alpha: number) => {
+      if (r <= 1 || alpha <= 0) return;
+      const inner = Math.max(0, r - width), outer = r + width;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(1, squash);
+      const g = ctx.createRadialGradient(0, 0, inner, 0, 0, outer);
+      g.addColorStop(0, rgba(color, 0));
+      g.addColorStop(0.5, rgba(color, alpha));
+      g.addColorStop(0.62, `rgba(255,255,255,${alpha * 0.5})`);
+      g.addColorStop(1, rgba(color, 0));
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(0, 0, outer, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
     };
 
     const frame = (now: number) => {
@@ -492,15 +519,9 @@ export function ParticleField({ effects, accent, accent2, intensity, silhouette,
         verdict();
         timers.verdict = rand(4, 6);
       }
-      if (has('scan') && (timers.scan -= dt) <= 0) {
-        // Anillo de interfaz que se abre alrededor de la figura y se cierra.
-        ev({ type: 'scan', x: cx(), y: cy(), size: Math.min(W, H) * 0.44, max: 2.8, color: accent });
-        timers.scan = rand(5, 7);
-      }
       if (has('stomp') && (timers.stomp -= dt) <= 0) {
-        ev({ type: 'shock', x: cx(), y: groundY, size: W * 0.8, max: 0.8, color: accent });
-        ev({ type: 'shock', x: cx(), y: groundY, size: W * 0.5, max: 0.6, color: '#ffffff' });
-        for (let i = 0; i < 22; i++) {
+        ev({ type: 'vignette', x: cx(), y: cy(), size: Math.max(W, H), max: 0.25, color: accent });
+        for (let i = 0; i < 26; i++) {
           const p = spawn('dust');
           p.x = cx() + rand(-W * 0.22, W * 0.22); p.y = groundY;
           p.vx = rand(-120, 120); p.vy = rand(-80, -20); p.size *= 1.3;
@@ -736,11 +757,10 @@ export function ParticleField({ effects, accent, accent2, intensity, silhouette,
           case 'feathers': {
             ctx.save();
             ctx.translate(p.x, p.y); ctx.rotate(p.angle);
-            ctx.globalAlpha = 0.8 * fade;
-            ctx.fillStyle = rgba(p.color, 1);
-            ctx.beginPath();
-            ctx.moveTo(0, -p.size); ctx.quadraticCurveTo(p.size * 0.45, 0, 0, p.size); ctx.quadraticCurveTo(-p.size * 0.45, 0, 0, -p.size);
-            ctx.fill();
+            ctx.globalAlpha = 0.85 * fade;
+            ctx.drawImage(glowSprite(p.color), -p.size * 0.5, -p.size * 1.6, p.size, p.size * 3.2);
+            ctx.globalAlpha = 0.5 * fade;
+            ctx.drawImage(glowSprite('#ffffff'), -p.size * 0.15, -p.size * 1.2, p.size * 0.3, p.size * 2.4);
             ctx.restore();
             break;
           }
@@ -780,29 +800,15 @@ export function ParticleField({ effects, accent, accent2, intensity, silhouette,
             break;
           }
           case 'frost': {
-            ctx.save();
-            ctx.translate(p.x, p.y); ctx.rotate(p.angle + time * 0.4);
-            ctx.globalAlpha = 0.8 * fade;
-            ctx.strokeStyle = rgba(p.color, 1); ctx.lineWidth = 1;
-            for (let j = 0; j < 3; j++) {
-              ctx.rotate(Math.PI / 3);
-              ctx.beginPath(); ctx.moveTo(-p.size, 0); ctx.lineTo(p.size, 0); ctx.stroke();
-            }
-            ctx.restore();
-            drawGlow(p.x, p.y, p.size * 3, p.color, 0.35 * fade);
+            const tw = 0.6 + Math.sin(time * 5 + p.seed) * 0.4;
+            drawGlow(p.x, p.y, p.size * 2.6, p.color, 0.55 * fade * tw);
+            drawGlow(p.x, p.y, p.size * 0.9, '#ffffff', 0.9 * fade * tw);
             break;
           }
           case 'cosmic': {
             const tw = 0.5 + Math.sin(time * 6 + p.seed) * 0.5;
             drawGlow(p.x, p.y, p.size * 5, p.color, fade * (0.4 + tw * 0.6));
-            if (tw > 0.85) {
-              ctx.globalAlpha = fade * 0.8;
-              ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 0.8;
-              ctx.beginPath();
-              ctx.moveTo(p.x - p.size * 4, p.y); ctx.lineTo(p.x + p.size * 4, p.y);
-              ctx.moveTo(p.x, p.y - p.size * 4); ctx.lineTo(p.x, p.y + p.size * 4);
-              ctx.stroke();
-            }
+            if (tw > 0.85) glint(p.x, p.y, p.size * 3, p.color, fade * (tw - 0.85) * 6);
             break;
           }
           default:
@@ -849,13 +855,9 @@ export function ParticleField({ effects, accent, accent2, intensity, silhouette,
         const out = 1 - (1 - t) * (1 - t); // easeOut
         switch (e.type) {
           case 'ripple': {
-            const r = e.size * (0.22 + 0.78 * out);
-            ctx.globalAlpha = (1 - t) * 0.55;
-            ctx.strokeStyle = rgba(e.color, 1); ctx.lineWidth = 2.2 * (1 - t) + 0.6;
-            ctx.beginPath(); ctx.ellipse(e.x, e.y, r, r * 0.92, 0, 0, Math.PI * 2); ctx.stroke();
-            ctx.globalAlpha = (1 - t) * 0.25;
-            ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.ellipse(e.x, e.y, r * 0.94, r * 0.86, 0, 0, Math.PI * 2); ctx.stroke();
+            // Barrera: onda de luz difusa, muy suave, que se expande desde la figura.
+            const r = e.size * (0.25 + 0.75 * out);
+            softRing(e.x, e.y, r, 0.92, 10 + 18 * t, e.color, 0.32 * (1 - t) * Math.min(1, t * 6));
             break;
           }
           case 'slash': {
@@ -886,9 +888,7 @@ export function ParticleField({ effects, accent, accent2, intensity, silhouette,
           case 'implode': {
             // La energía se contrae hacia el punto antes del impacto.
             const r = e.size * (1 - out);
-            ctx.globalAlpha = 0.4 + t * 0.6;
-            ctx.strokeStyle = rgba(e.color, 1); ctx.lineWidth = 2 + t * 3;
-            ctx.beginPath(); ctx.arc(e.x, e.y, Math.max(1, r), 0, Math.PI * 2); ctx.stroke();
+            softRing(e.x, e.y, Math.max(2, r), 1, 6 + t * 6, e.color, 0.4 + t * 0.5);
             drawGlow(e.x, e.y, 10 + t * 18, e.color, t);
             break;
           }
@@ -911,13 +911,9 @@ export function ParticleField({ effects, accent, accent2, intensity, silhouette,
             break;
           }
           case 'shock': {
+            // Onda expansiva: banda de luz que se abre y se difumina.
             const r = e.size * out;
-            ctx.globalAlpha = (1 - t) * 0.8;
-            ctx.strokeStyle = rgba(e.color, 1); ctx.lineWidth = 6 * (1 - t) + 1;
-            ctx.beginPath(); ctx.ellipse(e.x, e.y, r, r * 0.45, 0, 0, Math.PI * 2); ctx.stroke();
-            ctx.globalAlpha = (1 - t) * 0.5;
-            ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.2;
-            ctx.stroke();
+            softRing(e.x, e.y, r, 0.85, 8 + 22 * t, e.color, 0.7 * (1 - t));
             break;
           }
           case 'spot': {
@@ -952,74 +948,21 @@ export function ParticleField({ effects, accent, accent2, intensity, silhouette,
             break;
           }
           case 'pulse': {
+            // Latido de energía: resplandor que se expande desde el centro de la figura.
             const r = e.size * out;
-            ctx.globalAlpha = (1 - t) * 0.5;
-            ctx.strokeStyle = rgba(e.color, 1); ctx.lineWidth = 10 * (1 - t) + 1;
-            ctx.beginPath(); ctx.ellipse(e.x, e.y, r, r * 0.55, 0, 0, Math.PI * 2); ctx.stroke();
+            softRing(e.x, e.y, r, 0.9, 14 + 30 * t, e.color, 0.45 * (1 - t));
+            drawGlow(e.x, e.y, e.size * 0.35 * (1 + t), e.color, 0.25 * (1 - t), true);
             break;
           }
           case 'star': {
-            const fade = t < 0.2 ? t / 0.2 : 1 - (t - 0.2) / 0.8;
-            const len = e.size * (1.4 - t * 0.6);
-            ctx.globalAlpha = fade;
-            ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.2;
-            ctx.beginPath();
-            for (let j = 0; j < 4; j++) {
-              const a = j * (Math.PI / 2) + time * 0.5;
-              ctx.moveTo(e.x, e.y); ctx.lineTo(e.x + Math.cos(a) * len, e.y + Math.sin(a) * len);
-              const b2 = a + Math.PI / 4;
-              ctx.moveTo(e.x, e.y); ctx.lineTo(e.x + Math.cos(b2) * len * 0.45, e.y + Math.sin(b2) * len * 0.45);
-            }
-            ctx.stroke();
-            drawGlow(e.x, e.y, e.size * 1.2, e.color, fade);
+            // Destello de lente sobre el contorno (filo, metal, luz).
+            const fade = t < 0.15 ? t / 0.15 : 1 - (t - 0.15) / 0.85;
+            glint(e.x, e.y, e.size * 0.55, e.color, fade);
             break;
           }
           case 'flash':
             drawGlow(e.x, e.y, e.size * (1 + t * 0.8), e.color, 1 - t);
             break;
-          case 'scan': {
-            // Anillo de interfaz: arcos finos que se despliegan girando en sentidos opuestos,
-            // marcas de graduación y un breve "fijado" antes de cerrarse.
-            const open = t < 0.25 ? 1 - (1 - t / 0.25) ** 3 : t > 0.8 ? 1 - (t - 0.8) / 0.2 : 1;
-            const a = Math.max(0, Math.min(1, open));
-            const R = e.size * (0.92 + 0.08 * a);
-            const rot = time * 0.6;
-            ctx.lineCap = 'round';
-            // Arco exterior partido en tres tramos
-            ctx.globalAlpha = 0.55 * a;
-            ctx.strokeStyle = rgba(e.color, 1); ctx.lineWidth = 1.2;
-            for (let i = 0; i < 3; i++) {
-              const s = rot + (i * Math.PI * 2) / 3;
-              ctx.beginPath(); ctx.arc(e.x, e.y, R, s, s + 1.4 * a); ctx.stroke();
-            }
-            // Arco interior más grueso, girando al revés
-            ctx.globalAlpha = 0.35 * a;
-            ctx.lineWidth = 3;
-            for (let i = 0; i < 2; i++) {
-              const s = -rot * 1.6 + i * Math.PI;
-              ctx.beginPath(); ctx.arc(e.x, e.y, R * 0.9, s, s + 0.55 * a); ctx.stroke();
-            }
-            // Marcas de graduación
-            ctx.globalAlpha = 0.45 * a;
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            for (let i = 0; i < 48; i++) {
-              const ang = (i / 48) * Math.PI * 2 + rot * 0.25;
-              const len = i % 6 === 0 ? 7 : 3;
-              ctx.moveTo(e.x + Math.cos(ang) * (R * 1.04), e.y + Math.sin(ang) * (R * 1.04));
-              ctx.lineTo(e.x + Math.cos(ang) * (R * 1.04 + len), e.y + Math.sin(ang) * (R * 1.04 + len));
-            }
-            ctx.stroke();
-            // Destello de fijado a mitad de ciclo
-            if (t > 0.45 && t < 0.6) {
-              const f = 1 - Math.abs(t - 0.525) / 0.075;
-              ctx.globalAlpha = 0.6 * f;
-              ctx.lineWidth = 2;
-              ctx.beginPath(); ctx.arc(e.x, e.y, R, 0, Math.PI * 2); ctx.stroke();
-            }
-            ctx.lineCap = 'butt';
-            break;
-          }
           case 'crack': {
             if (!e.pts) break;
             const n = Math.max(2, Math.ceil(e.pts.length * Math.min(1, t / 0.25)));
