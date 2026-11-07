@@ -1,0 +1,8 @@
+node_modules
+dist
+dev-dist
+*.log
+.DS_Store
+# Las imágenes de personajes nunca van al repositorio: se importan desde la app.
+personajes/
+*.zip

@@ -1,0 +1,326 @@
+.stage {
+  position: relative;
+  width: 100%;
+  height: min(54vh, 470px);
+  margin: 0 auto;
+  touch-action: manipulation;
+}
+.stage.fill, .stage.compact { height: 100%; }
+
+.stage-layer { position: absolute; inset: 0; pointer-events: none; }
+
+/* ───────── Fondo ───────── */
+
+.stage-aura {
+  position: absolute; left: 50%; top: 48%;
+  width: calc(var(--aura-size) * 1%); aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--lv-accent) calc(var(--aura-strength) * 1%), transparent) 0%, transparent 68%);
+  animation: bg-breathe 4.2s ease-in-out infinite;
+}
+.stage-aura.second {
+  width: calc(var(--aura-size) * 1.35%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--lv-accent2) 30%, transparent) 0%, transparent 65%);
+  animation-duration: 6s; animation-direction: reverse;
+}
+@keyframes bg-breathe {
+  0%, 100% { opacity: 0.7; transform: translate(-50%, -50%) scale(0.96); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+}
+
+.stage-rays {
+  position: absolute; left: 50%; top: 46%;
+  width: 150%; aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background: repeating-conic-gradient(from 0deg, color-mix(in srgb, var(--lv-accent) 22%, transparent) 0deg 4deg, transparent 4deg 22deg);
+  -webkit-mask-image: radial-gradient(circle, #000 0%, transparent 52%);
+  mask-image: radial-gradient(circle, #000 0%, transparent 52%);
+  opacity: var(--rays-opacity);
+  animation: rays-spin 40s linear infinite;
+}
+@keyframes rays-spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+
+.stage-halo {
+  position: absolute; left: 50%; top: 44%;
+  width: 78%; aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--lv-accent) 55%, transparent);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--lv-accent) 35%, transparent), inset 0 0 30px color-mix(in srgb, var(--lv-accent) 25%, transparent);
+  animation: halo-pulse 3s ease-in-out infinite;
+}
+.stage-halo.dashed {
+  width: 92%;
+  border: 1.5px dashed color-mix(in srgb, var(--lv-accent2) 45%, transparent);
+  box-shadow: none;
+  animation: rays-spin 28s linear infinite reverse;
+}
+@keyframes halo-pulse {
+  0%, 100% { opacity: 0.45; transform: translate(-50%, -50%) scale(0.98); }
+  50% { opacity: 0.95; transform: translate(-50%, -50%) scale(1.03); }
+}
+
+.stage-ground {
+  position: absolute; left: 50%; bottom: 6%;
+  width: 70%; height: 14%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(0, 0, 0, 0.65) 0%, transparent 70%);
+}
+.stage-wave {
+  position: absolute; left: 50%; bottom: 8%;
+  width: 40%; height: 7%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--lv-accent) 70%, transparent);
+  animation: wave 2.8s ease-out infinite;
+}
+.stage-wave.w2 { animation-delay: 1.4s; }
+@keyframes wave {
+  0% { opacity: 0.9; transform: translateX(-50%) scale(0.5); }
+  100% { opacity: 0; transform: translateX(-50%) scale(2.2); }
+}
+
+.stage-flash {
+  background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--lv-accent) 45%, transparent) 0%, transparent 60%);
+  opacity: 0;
+  animation: flash 7s ease-in-out infinite;
+}
+@keyframes flash {
+  0%, 86%, 100% { opacity: 0; }
+  89% { opacity: 1; }
+  94% { opacity: 0.2; }
+}
+
+/* ───────── Figura ───────── */
+
+.stage-figure {
+  position: absolute; inset: 4% 4% 6%;
+}
+.m-bob, .m-sway { position: absolute; inset: 0; transform-origin: 50% 100%; }
+
+/* Recorte con bordes suaves: sin cortes duros arriba ni a los lados */
+.stage-crop {
+  position: absolute; inset: 0; overflow: hidden;
+  -webkit-mask-image:
+    linear-gradient(to bottom, transparent 0%, #000 6%, #000 70%, transparent 98%),
+    linear-gradient(to right, transparent 0%, #000 6%, #000 94%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to bottom, transparent 0%, #000 6%, #000 70%, transparent 98%),
+    linear-gradient(to right, transparent 0%, #000 6%, #000 94%, transparent 100%);
+  mask-composite: intersect;
+}
+.stage-zoom { position: absolute; inset: 0; }
+
+.stage-img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 16px 22px rgba(0, 0, 0, 0.55));
+  -webkit-user-drag: none;
+}
+
+/* Capas recortadas con la silueta de la propia imagen */
+.aura-mask, .stage-sweep, .stage-rim {
+  position: absolute; inset: 0;
+  -webkit-mask-size: contain; mask-size: contain;
+  -webkit-mask-position: center; mask-position: center;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+}
+
+/* ───────── Aura ceñida a la silueta ───────── */
+
+.aura-wrap {
+  position: absolute; inset: 0;
+  filter: blur(var(--aura-blur));
+  transform-origin: 50% 55%;
+  will-change: transform, opacity;
+}
+.aura-wrap .aura-mask { background: var(--lv-accent); }
+.aura-wrap.base { opacity: var(--aura-opacity); animation: aura-breathe 3.4s ease-in-out infinite; }
+.aura-wrap.outer { filter: blur(calc(var(--aura-blur) * 2.6)); opacity: 0.55; animation: aura-breathe 5.2s ease-in-out infinite reverse; }
+.aura-wrap.outer .aura-mask { background: var(--lv-accent2); }
+@keyframes aura-breathe {
+  0%, 100% { transform: scale(1.02); opacity: calc(var(--aura-opacity) * 0.75); }
+  50% { transform: scale(1.06); opacity: var(--aura-opacity); }
+}
+
+/* Fuego: el aura sube y ondula como llamas */
+.aura-fire .aura-wrap.flame { transform-origin: 50% 100%; mix-blend-mode: screen; }
+.aura-fire .aura-wrap.flame .aura-mask { background: linear-gradient(to top, var(--lv-accent2), var(--lv-accent) 55%, #fff1c9); }
+.aura-fire .aura-wrap.f1 { animation: flame 1.15s ease-in-out infinite alternate; }
+.aura-fire .aura-wrap.f2 { animation: flame 1.6s ease-in-out infinite alternate-reverse; opacity: 0.6; }
+@keyframes flame {
+  0% { transform: translateY(0) scale(1.03, 1.04) skewX(-1.5deg); opacity: 0.55; }
+  35% { opacity: 0.85; }
+  60% { transform: translateY(-2.5%) scale(1.05, 1.1) skewX(1.2deg); opacity: 0.65; }
+  100% { transform: translateY(-4%) scale(1.04, 1.13) skewX(-0.6deg); opacity: 0.9; }
+}
+
+/* Eléctrica: parpadeo con cortes y destellos sobre la figura */
+.aura-electric .aura-wrap.base { animation: zap 1.3s steps(1) infinite; }
+@keyframes zap {
+  0% { opacity: 0.55; transform: scale(1.03); }
+  12% { opacity: 1; transform: scale(1.06); }
+  18% { opacity: 0.35; }
+  30% { opacity: 0.85; transform: scale(1.04); }
+  55% { opacity: 0.5; }
+  62% { opacity: 1; transform: scale(1.07); }
+  70% { opacity: 0.6; transform: scale(1.03); }
+}
+.stage-rim {
+  background: var(--lv-accent);
+  mix-blend-mode: overlay;
+  opacity: 0;
+  animation: rim 3.1s steps(1) infinite;
+}
+@keyframes rim {
+  0%, 100% { opacity: 0; }
+  40% { opacity: 0.45; }
+  43% { opacity: 0; }
+  46% { opacity: 0.3; }
+  49% { opacity: 0; }
+}
+
+/* Oscura: humo denso que respira alrededor */
+.aura-dark .aura-wrap.base { animation-duration: 5s; }
+.aura-dark .aura-wrap.base .aura-mask { background: color-mix(in srgb, var(--lv-accent2) 65%, #000); }
+.aura-dark .aura-wrap.base { filter: blur(calc(var(--aura-blur) * 1.8)); opacity: 0.95; }
+.aura-dark .aura-wrap.outer .aura-mask { background: var(--lv-accent); }
+
+/* Divina: pulsos de luz que se expanden */
+.aura-divine .aura-wrap.base .aura-mask { background: color-mix(in srgb, var(--lv-accent) 70%, #fff); }
+.aura-divine .aura-wrap.base { animation: divine 2.4s ease-in-out infinite; }
+@keyframes divine {
+  0%, 100% { transform: scale(1.02); opacity: 0.55; }
+  45% { transform: scale(1.08); opacity: 1; }
+  60% { transform: scale(1.1); opacity: 0.7; }
+}
+
+/* Reflejo de luz que recorre la figura (metal) */
+.stage-sweep {
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.65) 48%, rgba(255, 255, 255, 0.15) 53%, transparent 62%);
+  background-size: 300% 100%;
+  mix-blend-mode: overlay;
+  animation: sweep 5s ease-in-out infinite;
+}
+.tier-4 .stage-sweep { animation-duration: 3.6s; }
+@keyframes sweep {
+  0% { background-position: 110% 0; }
+  55%, 100% { background-position: -10% 0; }
+}
+
+/* ───────── Movimiento propio de cada personaje ───────── */
+
+.motion-calm .m-bob { animation: bob-calm 6s ease-in-out infinite; }
+.motion-calm .m-sway { animation: sway-calm 9s ease-in-out infinite; }
+@keyframes bob-calm { 0%, 100% { transform: translateY(0) scaleY(1); } 50% { transform: translateY(calc(var(--amp) * -4px)) scaleY(1.006); } }
+@keyframes sway-calm { 0%, 100% { transform: rotate(-0.3deg); } 50% { transform: rotate(0.3deg); } }
+
+.motion-hover .m-bob { animation: bob-hover 3.4s ease-in-out infinite; }
+.motion-hover .m-sway { animation: sway-hover 5.3s ease-in-out infinite; }
+@keyframes bob-hover { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(calc(var(--amp) * -11px)); } }
+@keyframes sway-hover {
+  0%, 100% { transform: rotate(-0.9deg) translateX(-2px); }
+  50% { transform: rotate(0.9deg) translateX(2px); }
+}
+
+.motion-heavy .m-bob { animation: bob-heavy 4.6s ease-in-out infinite; }
+.motion-heavy .m-sway { animation: sway-heavy 4.6s ease-in-out infinite; }
+@keyframes bob-heavy {
+  0%, 100% { transform: scale(1, 1); }
+  40% { transform: scale(1.006, 1.016); }
+  55% { transform: scale(1.004, 1.012); }
+}
+@keyframes sway-heavy { 0%, 100% { transform: translateY(0); } 45% { transform: translateY(-2px); } 70% { transform: translateY(1px); } }
+
+.motion-agile .m-bob { animation: bob-agile 2.2s ease-in-out infinite; }
+.motion-agile .m-sway { animation: sway-agile 3.1s ease-in-out infinite; }
+@keyframes bob-agile { 0%, 100% { transform: translateY(0); } 30% { transform: translateY(calc(var(--amp) * -5px)); } 60% { transform: translateY(calc(var(--amp) * 1px)); } }
+@keyframes sway-agile {
+  0%, 100% { transform: rotate(-1.4deg) translateX(-3px); }
+  45% { transform: rotate(1.2deg) translateX(3px); }
+  70% { transform: rotate(0.2deg) translateX(0); }
+}
+
+.motion-menace .m-bob { animation: bob-menace 7s ease-in-out infinite; }
+.motion-menace .m-sway { animation: sway-menace 7s ease-in-out infinite; }
+@keyframes bob-menace { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.025) translateY(-3px); } }
+@keyframes sway-menace { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-1.2deg); } }
+.tier-3.motion-menace .m-sway, .tier-4.motion-menace .m-sway { animation: sway-menace 7s ease-in-out infinite, shiver 0.18s linear infinite; }
+@keyframes shiver { 0%, 100% { translate: 0 0; } 50% { translate: 0.6px -0.4px; } }
+
+/* Inestable: la figura se deforma levemente */
+.motion-warp .m-bob { animation: warp-a 5.5s ease-in-out infinite; }
+.motion-warp .m-sway { animation: warp-b 3.7s ease-in-out infinite; }
+@keyframes warp-a {
+  0%, 100% { transform: skewX(0deg) scale(1, 1); }
+  25% { transform: skewX(-1.6deg) scale(1.015, 0.99); }
+  60% { transform: skewX(1.2deg) scale(0.99, 1.02); }
+}
+@keyframes warp-b { 0%, 100% { transform: rotate(0.4deg); } 50% { transform: rotate(-0.8deg) translateY(-3px); } }
+
+/* Copias fantasma (velocidad) */
+.stage-img.ghost { filter: none; opacity: 0; mix-blend-mode: screen; }
+.stage-img.ghost.g1 { animation: ghost 1.6s steps(6) infinite; }
+.stage-img.ghost.g2 { animation: ghost 1.6s steps(6) infinite 0.53s; }
+@keyframes ghost {
+  0% { opacity: 0.35; transform: translateX(-7%); }
+  50% { opacity: 0.15; transform: translateX(-3%); }
+  100% { opacity: 0; transform: translateX(0); }
+}
+
+/* Retícula hexagonal que recorre la figura (nanotecnología) */
+.stage-hex {
+  position: absolute; inset: 0;
+  -webkit-mask-size: contain; mask-size: contain;
+  -webkit-mask-position: center; mask-position: center;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  background-image:
+    linear-gradient(180deg, transparent 0%, rgba(140, 235, 255, 0.55) 48%, transparent 56%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='41.6' viewBox='0 0 24 41.6'%3E%3Cpath d='M12 0L24 6.9V20.8L12 27.7L0 20.8V6.9Z M12 27.7V41.6' fill='none' stroke='%23bff4ff' stroke-width='1'/%3E%3C/svg%3E");
+  background-size: 100% 300%, 14px 24px;
+  background-repeat: no-repeat, repeat;
+  mix-blend-mode: screen;
+  opacity: 0.55;
+  animation: hex-wave 4.2s ease-in-out infinite;
+}
+@keyframes hex-wave {
+  0% { background-position: 0 120%, 0 0; opacity: 0.15; }
+  45% { opacity: 0.7; }
+  100% { background-position: 0 -20%, 0 -24px; opacity: 0.15; }
+}
+
+/* Puntos de luz (ojos, núcleos de energía) */
+.light-point {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff 0%, #fff 12%, var(--lc) 32%, color-mix(in srgb, var(--lc) 35%, transparent) 55%, transparent 72%);
+  mix-blend-mode: screen;
+  animation: light-pulse 2.6s ease-in-out infinite;
+}
+.light-point::before, .light-point::after {
+  content: '';
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--lc) 70%, #fff), transparent);
+}
+.light-point::before { width: 420%; height: 9%; }
+.light-point::after { width: 9%; height: 200%; opacity: 0.5; background: linear-gradient(0deg, transparent, color-mix(in srgb, var(--lc) 70%, #fff), transparent); }
+@keyframes light-pulse {
+  0%, 100% { opacity: 0.75; transform: translate(-50%, -50%) scale(0.9); }
+  45% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+  55% { opacity: 0.9; transform: translate(-50%, -50%) scale(1.05); }
+}
+
+.stage-emblem { width: 62%; max-width: 260px; }
+.stage-emblem .spin { transform-box: fill-box; transform-origin: 50% 50%; animation: spin-plain 36s linear infinite; }
+.stage-emblem .pulse { transform-box: fill-box; transform-origin: 50% 50%; animation: em-pulse 3.2s ease-in-out infinite; }
+@keyframes spin-plain { to { transform: rotate(360deg); } }
+@keyframes em-pulse { 0%, 100% { opacity: 0.7; transform: scale(0.97); } 50% { opacity: 1; transform: scale(1.04); } }
+
+.stage.reduced *, .stage.compact .m-bob, .stage.compact .m-sway { animation: none !important; }

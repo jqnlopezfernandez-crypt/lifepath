@@ -1,0 +1,154 @@
+:root {
+  --bg: #06080d;
+  --bg-2: #0b0f18;
+  --surface: rgba(255, 255, 255, 0.035);
+  --surface-2: rgba(255, 255, 255, 0.06);
+  --line: rgba(255, 255, 255, 0.07);
+  --text: #e8ecf4;
+  --text-2: #c9d0dd;
+  --muted: #9aa3b5;
+  --faint: #8a93a6;
+  --accent: #5cc8ff;
+  --accent-2: #3c7dff;
+  --warm: #ffb067;
+  --radius-l: 24px;
+  --radius-m: 18px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --nav-h: 64px;
+  --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Inter, system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Inter, system-ui, sans-serif;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body, #root { margin: 0; height: 100%; background: var(--bg); }
+
+body {
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-text-size-adjust: 100%;
+}
+
+button { font: inherit; color: inherit; cursor: pointer; }
+input, select { font: inherit; color: inherit; -webkit-user-select: auto; user-select: auto; }
+
+.app {
+  position: relative;
+  height: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 55% at 50% 12%, color-mix(in srgb, var(--accent) 14%, #0b1220) 0%, #080b12 55%, var(--bg) 100%);
+  transition: background 0.8s ease;
+}
+
+/* Ambiente de fondo propio de cada ruta (muy sutil, detrás de todo) */
+.app::before {
+  content: '';
+  position: absolute; inset: 0;
+  pointer-events: none;
+}
+.route-ruta1::before {
+  /* Stark: retícula tecnológica que se desplaza despacio */
+  background-image:
+    linear-gradient(rgba(92, 200, 255, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(92, 200, 255, 0.07) 1px, transparent 1px);
+  background-size: 34px 34px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 45% at 50% 28%, #000 0%, transparent 100%);
+  mask-image: radial-gradient(ellipse 70% 45% at 50% 28%, #000 0%, transparent 100%);
+  animation: grid-drift 24s linear infinite;
+}
+@keyframes grid-drift { to { background-position: 0 34px, 34px 0; } }
+.route-ruta2::before {
+  /* Jujutsu: bruma violeta que respira */
+  background:
+    radial-gradient(60% 35% at 25% 30%, rgba(110, 70, 200, 0.16) 0%, transparent 70%),
+    radial-gradient(55% 30% at 78% 18%, rgba(60, 40, 140, 0.18) 0%, transparent 70%);
+  animation: fog-breathe 12s ease-in-out infinite alternate;
+}
+@keyframes fog-breathe { from { opacity: 0.6; transform: translateX(-3%); } to { opacity: 1; transform: translateX(3%); } }
+.route-ruta3::before {
+  /* Héroes: luz cálida de cielo desde arriba */
+  background:
+    radial-gradient(90% 40% at 50% -5%, rgba(255, 196, 110, 0.18) 0%, transparent 70%),
+    repeating-conic-gradient(from 180deg at 50% -10%, rgba(255, 210, 140, 0.05) 0deg 3deg, transparent 3deg 14deg);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, transparent 55%);
+  mask-image: linear-gradient(to bottom, #000 0%, transparent 55%);
+}
+.app.still::before { animation: none; }
+
+.screen {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: calc(var(--safe-top) + 14px) 20px calc(var(--nav-h) + var(--safe-bottom) + 28px);
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 4px 0 0;
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-l);
+}
+
+.btn {
+  min-height: 50px;
+  padding: 0 18px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  font-size: 15px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn:active { transform: scale(0.98); }
+.btn-primary { background: var(--accent); color: #06121f; border: none; }
+.btn:disabled { opacity: 0.45; }
+
+.chip {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.chip[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--text);
+}
+
+input[type='range'] { width: 100%; accent-color: var(--accent); height: 32px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+}
