@@ -30,6 +30,7 @@ interface P {
   seed: number;
   bounced: boolean;
   tilt: number; // achatamiento de la órbita
+  tx?: number; ty?: number; // destino (nanopartículas que se ensamblan)
   rot: number;  // inclinación del plano de la órbita
 }
 
@@ -41,7 +42,7 @@ const BASE_COUNT: Record<EffectKind, number> = {
   mist: 12, flames: 28, decay: 44,
   // Los efectos de técnica son eventos, no partículas continuas.
   orbs: 0, ripples: 0, slashes: 0, blackflash: 0, beam: 0, pool: 0, pulse: 0, starburst: 0, afterimage: 0, verdict: 0,
-  scan: 0, hex: 0, stomp: 0, stones: 0, dual: 0, explosions: 0, cracks: 0
+  scan: 0, hex: 70, stomp: 0, stones: 0, dual: 0, explosions: 0, cracks: 0
 };
 
 const STONE_COLORS = ['#b04bff', '#3f8cff', '#ff3b3b', '#ff9a2e', '#3fe07a', '#ffd23f'];
@@ -113,6 +114,7 @@ export function ParticleField({ effects, accent, accent2, intensity, silhouette,
 
     let W = 0, H = 0;
     let edges: { x: number; y: number }[] = [];
+    let traced: { x: number; y: number; a: number }[] = [];
     let groundY = 0;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -123,6 +125,19 @@ export function ParticleField({ effects, accent, accent2, intensity, silhouette,
       canvas.height = Math.round(H * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       edges = silhouette ? edgePointsOnStage(silhouette, framing, W, H) : [];
+      // Contorno ordenado por ángulo alrededor del centro: permite "recorrer" la silueta.
+      const ox = W / 2, oy = H * 0.46;
+      // Solo el borde exterior: por cada franja de ángulo, el punto más alejado del centro.
+      const BINS = 240;
+      const outer: ({ x: number; y: number; a: number; r: number } | undefined)[] = new Array(BINS);
+      for (const p of edges) {
+        const a = Math.atan2(p.y - oy, p.x - ox);
+        const r = Math.hypot(p.x - ox, p.y - oy);
+        const b = Math.floor(((a + Math.PI) / (Math.PI * 2)) * BINS) % BINS;
+        const cur = outer[b];
+        if (!cur || r > cur.r) outer[b] = { x: p.x, y: p.y, a, r };
+      }
+      traced = outer.filter((p): p is { x: number; y: number; a: number; r: number } => !!p);
       groundY = H * 0.9;
     };
     resize();
@@ -203,6 +218,17 @@ export function ParticleField({ effects, accent, accent2, intensity, silhouette,
           p.tilt = ring ? 0.3 : 0.42;
           p.rot = ring ? 0.35 : -0.22;
           p.size = rand(2.2, 5.5) * k; p.color = pick([accent, accent, accent2]); p.max = rand(5, 9);
+          break;
+        }
+        case 'hex': {
+          // Nanopartícula: nace fuera de la figura y viaja hasta encajar en el contorno.
+          const s = fromEdge();
+          const a = Math.atan2(s.y - cy(), s.x - cx()) + rand(-0.5, 0.5);
+          const d = rand(26, 70);
+          p.tx = s.x; p.ty = s.y;
+          p.x = s.x + Math.cos(a) * d; p.y = s.y + Math.sin(a) * d;
+          p.size = rand(0.9, 1.8) * k; p.max = rand(0.9, 1.6);
+          p.color = pick([accent, accent2, '#e8fbff']);
           break;
         }
         case 'decay': {
@@ -467,8 +493,9 @@ export function ParticleField({ effects, accent, accent2, intensity, silhouette,
         timers.verdict = rand(4, 6);
       }
       if (has('scan') && (timers.scan -= dt) <= 0) {
-        ev({ type: 'scan', x: 0, y: H * 0.04, y2: groundY, size: 1, max: 1.5, color: accent });
-        timers.scan = rand(3.5, 5);
+        // Anillo de interfaz que se abre alrededor de la figura y se cierra.
+        ev({ type: 'scan', x: cx(), y: cy(), size: Math.min(W, H) * 0.44, max: 2.8, color: accent });
+        timers.scan = rand(5, 7);
       }
       if (has('stomp') && (timers.stomp -= dt) <= 0) {
         ev({ type: 'shock', x: cx(), y: groundY, size: W * 0.8, max: 0.8, color: accent });
@@ -640,6 +667,27 @@ export function ParticleField({ effects, accent, accent2, intensity, silhouette,
           case 'shadow':
           case 'mist':
             break; // ya dibujados en la capa 1
+          case 'hex': {
+            // Viaje hacia el contorno con frenada final; al llegar, destello breve.
+            const tx = p.tx ?? p.x, ty = p.ty ?? p.y;
+            const travel = Math.min(1, t / 0.7);
+            const e = 1 - (1 - travel) ** 3;
+            const sx = p.x, sy = p.y; // posición de partida (no se modifica)
+            const x = sx + (tx - sx) * e, y = sy + (ty - sy) * e;
+            if (t < 0.7) {
+              // Estela corta en la dirección del movimiento
+              const back = Math.max(0, travel - 0.12);
+              const eb = 1 - (1 - back) ** 3;
+              ctx.globalAlpha = 0.5 * Math.min(1, t / 0.15);
+              ctx.strokeStyle = rgba(p.color, 1); ctx.lineWidth = p.size;
+              ctx.beginPath(); ctx.moveTo(sx + (tx - sx) * eb, sy + (ty - sy) * eb); ctx.lineTo(x, y); ctx.stroke();
+              drawGlow(x, y, p.size * 3, p.color, 0.8 * Math.min(1, t / 0.15));
+            } else {
+              const f = 1 - (t - 0.7) / 0.3;
+              drawGlow(x, y, p.size * (3 + (1 - f) * 4), '#e8fbff', f * 0.9);
+            }
+            break;
+          }
           case 'decay': {
             ctx.globalCompositeOperation = 'source-over';
             p.angle += p.spin * dt;
@@ -930,23 +978,46 @@ export function ParticleField({ effects, accent, accent2, intensity, silhouette,
             drawGlow(e.x, e.y, e.size * (1 + t * 0.8), e.color, 1 - t);
             break;
           case 'scan': {
-            // Línea holográfica que barre de arriba abajo con una banda de retícula.
-            const yy = e.y + (e.y2 - e.y) * out;
-            const a = t < 0.1 ? t / 0.1 : 1 - Math.max(0, (t - 0.75) / 0.25);
-            const g = ctx.createLinearGradient(0, yy - 40, 0, yy);
-            g.addColorStop(0, rgba(e.color, 0));
-            g.addColorStop(1, rgba(e.color, 0.22 * a));
-            ctx.globalAlpha = 1;
-            ctx.fillStyle = g;
-            ctx.fillRect(W * 0.06, yy - 40, W * 0.88, 40);
-            ctx.globalAlpha = 0.9 * a;
-            ctx.strokeStyle = rgba(e.color, 1); ctx.lineWidth = 1.5;
-            ctx.beginPath(); ctx.moveTo(W * 0.06, yy); ctx.lineTo(W * 0.94, yy); ctx.stroke();
-            ctx.globalAlpha = 0.35 * a;
-            ctx.lineWidth = 1;
-            for (let gx = W * 0.1; gx < W * 0.9; gx += 18) {
-              ctx.beginPath(); ctx.moveTo(gx, yy - 36); ctx.lineTo(gx, yy); ctx.stroke();
+            // Anillo de interfaz: arcos finos que se despliegan girando en sentidos opuestos,
+            // marcas de graduación y un breve "fijado" antes de cerrarse.
+            const open = t < 0.25 ? 1 - (1 - t / 0.25) ** 3 : t > 0.8 ? 1 - (t - 0.8) / 0.2 : 1;
+            const a = Math.max(0, Math.min(1, open));
+            const R = e.size * (0.92 + 0.08 * a);
+            const rot = time * 0.6;
+            ctx.lineCap = 'round';
+            // Arco exterior partido en tres tramos
+            ctx.globalAlpha = 0.55 * a;
+            ctx.strokeStyle = rgba(e.color, 1); ctx.lineWidth = 1.2;
+            for (let i = 0; i < 3; i++) {
+              const s = rot + (i * Math.PI * 2) / 3;
+              ctx.beginPath(); ctx.arc(e.x, e.y, R, s, s + 1.4 * a); ctx.stroke();
             }
+            // Arco interior más grueso, girando al revés
+            ctx.globalAlpha = 0.35 * a;
+            ctx.lineWidth = 3;
+            for (let i = 0; i < 2; i++) {
+              const s = -rot * 1.6 + i * Math.PI;
+              ctx.beginPath(); ctx.arc(e.x, e.y, R * 0.9, s, s + 0.55 * a); ctx.stroke();
+            }
+            // Marcas de graduación
+            ctx.globalAlpha = 0.45 * a;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            for (let i = 0; i < 48; i++) {
+              const ang = (i / 48) * Math.PI * 2 + rot * 0.25;
+              const len = i % 6 === 0 ? 7 : 3;
+              ctx.moveTo(e.x + Math.cos(ang) * (R * 1.04), e.y + Math.sin(ang) * (R * 1.04));
+              ctx.lineTo(e.x + Math.cos(ang) * (R * 1.04 + len), e.y + Math.sin(ang) * (R * 1.04 + len));
+            }
+            ctx.stroke();
+            // Destello de fijado a mitad de ciclo
+            if (t > 0.45 && t < 0.6) {
+              const f = 1 - Math.abs(t - 0.525) / 0.075;
+              ctx.globalAlpha = 0.6 * f;
+              ctx.lineWidth = 2;
+              ctx.beginPath(); ctx.arc(e.x, e.y, R, 0, Math.PI * 2); ctx.stroke();
+            }
+            ctx.lineCap = 'butt';
             break;
           }
           case 'crack': {
@@ -963,6 +1034,22 @@ export function ParticleField({ effects, accent, accent2, intensity, silhouette,
             ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.2;
             ctx.stroke();
             break;
+          }
+        }
+      }
+
+      // Luz que recorre el contorno de la figura (análisis), dos cabezas en sentidos opuestos.
+      if (has('scan') && traced.length > 20) {
+        const n = traced.length;
+        const tail = Math.max(8, Math.floor(n * 0.09));
+        const speed = 0.11; // vueltas por segundo
+        for (const dir of [1, -1]) {
+          const head = (((time * speed * dir) % 1) + 1) % 1 * n + (dir < 0 ? n / 2 : 0);
+          for (let j = 0; j < tail; j++) {
+            const idx = Math.floor(((head - dir * j) % n + n) % n);
+            const p = traced[idx];
+            const f = 1 - j / tail;
+            drawGlow(p.x, p.y, (j === 0 ? 7 : 3.2) * f + 1, j < 3 ? '#ffffff' : accent, 0.75 * f * f);
           }
         }
       }

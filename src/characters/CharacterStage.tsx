@@ -140,9 +140,6 @@ export function CharacterStage({ route, level, compact, className }: Props) {
                   {!compact && (cfg.sweep || tier >= 4) && (
                     <div className="stage-sweep" style={maskStyle} />
                   )}
-                  {!compact && cfg.effects.includes('hex') && (
-                    <div className="stage-hex" style={maskStyle} />
-                  )}
                   {!compact && cfg.aura === 'electric' && (
                     <div className="stage-rim" style={maskStyle} />
                   )}

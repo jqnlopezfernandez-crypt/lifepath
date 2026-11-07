@@ -272,27 +272,6 @@
   100% { opacity: 0; transform: translateX(0); }
 }
 
-/* Retícula hexagonal que recorre la figura (nanotecnología) */
-.stage-hex {
-  position: absolute; inset: 0;
-  -webkit-mask-size: contain; mask-size: contain;
-  -webkit-mask-position: center; mask-position: center;
-  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
-  background-image:
-    linear-gradient(180deg, transparent 0%, rgba(140, 235, 255, 0.55) 48%, transparent 56%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='41.6' viewBox='0 0 24 41.6'%3E%3Cpath d='M12 0L24 6.9V20.8L12 27.7L0 20.8V6.9Z M12 27.7V41.6' fill='none' stroke='%23bff4ff' stroke-width='1'/%3E%3C/svg%3E");
-  background-size: 100% 300%, 14px 24px;
-  background-repeat: no-repeat, repeat;
-  mix-blend-mode: screen;
-  opacity: 0.55;
-  animation: hex-wave 4.2s ease-in-out infinite;
-}
-@keyframes hex-wave {
-  0% { background-position: 0 120%, 0 0; opacity: 0.15; }
-  45% { opacity: 0.7; }
-  100% { background-position: 0 -20%, 0 -24px; opacity: 0.15; }
-}
-
 /* Puntos de luz (ojos, núcleos de energía) */
 .light-point {
   position: absolute;

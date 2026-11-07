@@ -29,8 +29,8 @@ export type EffectKind =
   | 'mist'      // niebla baja que se desplaza
   | 'flames'    // lenguas de fuego que nacen del contorno
   | 'verdict'   // columna de luz que cae sobre la figura y golpe en el suelo
-  | 'scan'      // línea de escaneo holográfico que barre la escena
-  | 'hex'       // retícula hexagonal que recorre la figura (nanotecnología)
+  | 'scan'      // luz que recorre el contorno y anillo de interfaz
+  | 'hex'       // nanopartículas que se ensamblan sobre la silueta
   | 'stomp'     // pisotón: onda en el suelo, polvo y sacudida
   | 'stones'    // seis gemas de colores en órbita que destellan a la vez
   | 'dual'      // fuego en el lado derecho, hielo en el izquierdo
@@ -120,7 +120,7 @@ export const ROUTES: RouteConfig[] = [
       L(6, 'Mark XLII', '#ffc857', '#ff5a4f', ['sparks', 'streaks', 'starburst'], 'hover', 'divine', true, f(2.5, 12)),
       // El tanque: pisotones que sacuden el suelo, polvo y brasas.
       L(7, 'Hulkbuster', '#e0413a', '#ffb067', ['stomp', 'embers', 'sparks'], 'heavy', 'fire', true, f(2.0, 15)),
-      // Nanotecnología: retícula hexagonal recorriendo la armadura y rayos.
+      // Nanotecnología: partículas que se ensamblan sobre la armadura, y rayos.
       L(8, 'Mark L', '#5ce1ff', '#b0283a', ['hex', 'lightning', 'orbit'], 'calm', 'electric', true, f(2.4, 10)),
       // La definitiva: nanotecnología, energía y estelas de vuelo.
       L(9, 'Mark LXXXV', '#ffc857', '#5ce1ff', ['hex', 'embers', 'lightning', 'streaks'], 'hover', 'divine', true, f(2.0, 15)),
