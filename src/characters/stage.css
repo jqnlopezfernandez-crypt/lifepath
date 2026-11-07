@@ -69,94 +69,104 @@
   -webkit-user-drag: none;
 }
 
-/* Capas recortadas con la silueta de la propia imagen */
-.aura-mask, .stage-sweep, .stage-rim {
+.figure-core { position: absolute; inset: 0; will-change: transform, opacity; }
+
+/* Capas recortadas con la silueta (estáticas: solo se mueve lo de dentro) */
+.stage-sweep, .stage-rim {
   position: absolute; inset: 0;
   -webkit-mask-size: contain; mask-size: contain;
   -webkit-mask-position: center; mask-position: center;
   -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
 }
 
-/* ───────── Aura ceñida a la silueta ───────── */
-
-.aura-wrap {
-  position: absolute; inset: 0;
-  filter: blur(var(--aura-blur));
-  transform-origin: 50% 55%;
+/* ───────── Aura precalculada (imagen ya difuminada): solo transform y opacity ───────── */
+.sprite {
+  position: absolute;
+  inset: -20%;            /* = SPRITE_MARGIN en auraSprites.ts */
+  width: 140%; height: 140%;
+  object-fit: contain;
+  pointer-events: none;
   will-change: transform, opacity;
+  -webkit-user-drag: none;
 }
-.aura-wrap .aura-mask { background: var(--lv-accent); }
-.aura-wrap.base { opacity: var(--aura-opacity); animation: aura-breathe 3.4s ease-in-out infinite; }
-.aura-wrap.outer { filter: blur(calc(var(--aura-blur) * 2.6)); opacity: 0.55; animation: aura-breathe 5.2s ease-in-out infinite reverse; }
-.aura-wrap.outer .aura-mask { background: var(--lv-accent2); }
+.aura { transform-origin: 50% 55%; }
+.aura.base { opacity: var(--aura-opacity); animation: aura-breathe 3.6s ease-in-out infinite; }
+.aura.outer { opacity: 0.55; animation: aura-breathe-wide 5.4s ease-in-out infinite; }
 @keyframes aura-breathe {
-  0%, 100% { transform: scale(1.02); opacity: calc(var(--aura-opacity) * 0.75); }
-  50% { transform: scale(1.06); opacity: var(--aura-opacity); }
+  0%, 100% { transform: scale(1.02); opacity: calc(var(--aura-opacity) * 0.7); }
+  50% { transform: scale(1.05); opacity: var(--aura-opacity); }
+}
+@keyframes aura-breathe-wide {
+  0%, 100% { transform: scale(1.04); opacity: 0.35; }
+  50% { transform: scale(1.1); opacity: 0.6; }
 }
 
-/* Fuego: el aura sube y ondula como llamas */
-.aura-fire .aura-wrap.flame { transform-origin: 50% 100%; mix-blend-mode: screen; }
-.aura-fire .aura-wrap.flame .aura-mask { background: linear-gradient(to top, var(--lv-accent2), var(--lv-accent) 55%, #fff1c9); }
-.aura-fire .aura-wrap.f1 { animation: flame 1.15s ease-in-out infinite alternate; }
-.aura-fire .aura-wrap.f2 { animation: flame 1.6s ease-in-out infinite alternate-reverse; opacity: 0.6; }
+/* Contraluz (nivel 7+): silueta enorme y difusa detrás */
+.aura.backlight { transform-origin: 50% 40%; animation: backlight 6s ease-in-out infinite; }
+@keyframes backlight {
+  0%, 100% { transform: scale(1.12) translateY(-2%); opacity: 0.4; }
+  50% { transform: scale(1.2) translateY(-3%); opacity: 0.68; }
+}
+
+/* Fuego: dos capas de llama que suben y parpadean a distinto ritmo */
+.aura.flame { transform-origin: 50% 100%; }
+.aura.f1 { animation: flame 1.1s ease-in-out infinite alternate; }
+.aura.f2 { animation: flame2 1.55s ease-in-out infinite alternate; }
 @keyframes flame {
-  0% { transform: translateY(0) scale(1.03, 1.04) skewX(-1.5deg); opacity: 0.55; }
-  35% { opacity: 0.85; }
-  60% { transform: translateY(-2.5%) scale(1.05, 1.1) skewX(1.2deg); opacity: 0.65; }
-  100% { transform: translateY(-4%) scale(1.04, 1.13) skewX(-0.6deg); opacity: 0.9; }
+  0% { transform: translateY(0) scale(1.04, 1.04); opacity: 0.32; }
+  45% { opacity: 0.55; }
+  100% { transform: translateY(-2.5%) scale(1.07, 1.12); opacity: 0.42; }
+}
+@keyframes flame2 {
+  0% { transform: translateY(-1%) scale(1.06, 1.08) skewX(1deg); opacity: 0.2; }
+  60% { opacity: 0.4; }
+  100% { transform: translateY(-4%) scale(1.08, 1.17) skewX(-1deg); opacity: 0.28; }
 }
 
-/* Eléctrica: parpadeo con cortes y destellos sobre la figura */
-.aura-electric .aura-wrap.base { animation: zap 1.3s steps(1) infinite; }
+/* Eléctrica: parpadeo con cortes */
+.aura-electric .aura.base { animation: zap 1.3s steps(1) infinite; }
 @keyframes zap {
-  0% { opacity: 0.55; transform: scale(1.03); }
-  12% { opacity: 1; transform: scale(1.06); }
+  0% { opacity: 0.55; transform: scale(1.02); }
+  12% { opacity: 1; transform: scale(1.05); }
   18% { opacity: 0.35; }
-  30% { opacity: 0.85; transform: scale(1.04); }
+  30% { opacity: 0.85; transform: scale(1.03); }
   55% { opacity: 0.5; }
-  62% { opacity: 1; transform: scale(1.07); }
-  70% { opacity: 0.6; transform: scale(1.03); }
+  62% { opacity: 1; transform: scale(1.06); }
+  70% { opacity: 0.6; transform: scale(1.02); }
 }
-.stage-rim {
-  background: var(--lv-accent);
-  mix-blend-mode: overlay;
-  opacity: 0;
-  animation: rim 3.1s steps(1) infinite;
-}
+.stage-rim { background: var(--lv-accent); opacity: 0; animation: rim 3.1s steps(1) infinite; }
 @keyframes rim {
   0%, 100% { opacity: 0; }
-  40% { opacity: 0.45; }
+  40% { opacity: 0.28; }
   43% { opacity: 0; }
-  46% { opacity: 0.3; }
+  46% { opacity: 0.18; }
   49% { opacity: 0; }
 }
 
-/* Oscura: humo denso que respira alrededor */
-.aura-dark .aura-wrap.base { animation-duration: 5s; }
-.aura-dark .aura-wrap.base .aura-mask { background: color-mix(in srgb, var(--lv-accent2) 65%, #000); }
-.aura-dark .aura-wrap.base { filter: blur(calc(var(--aura-blur) * 1.8)); opacity: 0.95; }
-.aura-dark .aura-wrap.outer .aura-mask { background: var(--lv-accent); }
+/* Oscura: respiración lenta y densa */
+.aura-dark .aura.base { animation-duration: 5.2s; }
 
-/* Divina: pulsos de luz que se expanden */
-.aura-divine .aura-wrap.base .aura-mask { background: color-mix(in srgb, var(--lv-accent) 70%, #fff); }
-.aura-divine .aura-wrap.base { animation: divine 2.4s ease-in-out infinite; }
+/* Divina: pulsos de luz */
+.aura-divine .aura.base { animation: divine 2.4s ease-in-out infinite; }
 @keyframes divine {
-  0%, 100% { transform: scale(1.02); opacity: 0.55; }
-  45% { transform: scale(1.08); opacity: 1; }
-  60% { transform: scale(1.1); opacity: 0.7; }
+  0%, 100% { transform: scale(1.01); opacity: 0.55; }
+  45% { transform: scale(1.06); opacity: 1; }
+  60% { transform: scale(1.075); opacity: 0.72; }
 }
 
-/* Reflejo de luz que recorre la figura (metal) */
-.stage-sweep {
-  background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.65) 48%, rgba(255, 255, 255, 0.15) 53%, transparent 62%);
-  background-size: 300% 100%;
-  mix-blend-mode: overlay;
+/* Reflejo de luz que recorre la figura: la máscara no se mueve, solo la banda de dentro */
+.stage-sweep { overflow: hidden; }
+.sweep-band {
+  position: absolute; top: -10%; bottom: -10%; left: 0;
+  width: 45%;
+  background: linear-gradient(105deg, transparent 0%, rgba(255, 255, 255, 0.42) 45%, rgba(255, 255, 255, 0.1) 60%, transparent 100%);
+  will-change: transform;
   animation: sweep 5s ease-in-out infinite;
 }
-.tier-4 .stage-sweep { animation-duration: 3.6s; }
+.tier-4 .sweep-band { animation-duration: 3.6s; }
 @keyframes sweep {
-  0% { background-position: 110% 0; }
-  55%, 100% { background-position: -10% 0; }
+  0% { transform: translateX(-120%); }
+  55%, 100% { transform: translateX(260%); }
 }
 
 /* ───────── Movimiento propio de cada personaje ─────────
@@ -188,7 +198,7 @@
 @keyframes warp-b { 0%, 100% { transform: rotate(0.3deg); } 50% { transform: rotate(-0.6deg) translateY(-2px); } }
 
 /* Copias fantasma (velocidad) */
-.stage-img.ghost { filter: none; opacity: 0; mix-blend-mode: screen; }
+.stage-img.ghost { filter: none; opacity: 0; will-change: transform, opacity; }
 .stage-img.ghost.g1 { animation: ghost 1.6s steps(6) infinite; }
 .stage-img.ghost.g2 { animation: ghost 1.6s steps(6) infinite 0.53s; }
 @keyframes ghost {
@@ -197,37 +207,28 @@
   100% { opacity: 0; transform: translateX(0); }
 }
 
-/* ───────── Contraluz (nivel 7+): la silueta, más grande y muy difuminada, detrás ───────── */
-.aura-wrap.backlight {
-  filter: blur(calc(var(--aura-blur) * 4.5));
-  opacity: 0.5;
-  transform-origin: 50% 40%;
-  animation: backlight 6s ease-in-out infinite;
-}
-.aura-wrap.backlight .aura-mask { background: linear-gradient(to bottom, #fff, var(--lv-accent) 45%, var(--lv-accent2)); }
-@keyframes backlight {
-  0%, 100% { transform: scale(1.1) translateY(-2%); opacity: 0.38; }
-  50% { transform: scale(1.16) translateY(-3%); opacity: 0.6; }
-}
-
 /* ───────── Presencia: una sombra enorme que respira detrás de la figura ───────── */
 .presence {
   position: absolute; inset: 0;
-  transform: translateY(-16%) scale(1.55);
-  transform-origin: 50% 75%;
+  transform-origin: 50% 80%;
   animation: presence 9s ease-in-out infinite;
+  will-change: transform, opacity;
 }
-.presence-body, .presence-glow { position: absolute; inset: 0; }
-.presence-body { filter: blur(3px); opacity: 0.92; }
-.presence-body .aura-mask {
-  background: linear-gradient(to bottom, #000 0%, color-mix(in srgb, var(--lv-accent2) 80%, #000) 55%, transparent 92%);
-}
-.presence-glow { filter: blur(14px); opacity: 0.55; transform: scale(1.03); }
-.presence-glow .aura-mask { background: var(--lv-accent); }
+.presence .sprite { inset: -20%; }
+.presence-body { opacity: 0.95; }
+.presence-glow { opacity: 0.6; transform: scale(1.04); }
 @keyframes presence {
-  0%, 100% { transform: translateY(-16%) scale(1.55); opacity: 0.55; }
-  45% { transform: translateY(-18%) scale(1.6); opacity: 0.9; }
-  60% { transform: translateY(-17.5%) scale(1.59); opacity: 0.75; }
+  0%, 100% { transform: translateY(-15%) scale(1.5); opacity: 0.55; }
+  45% { transform: translateY(-17%) scale(1.56); opacity: 0.88; }
+  60% { transform: translateY(-16.5%) scale(1.55); opacity: 0.75; }
+}
+/* Cuando la presencia "se asoma": se acerca por encima del personaje */
+.surge .presence { animation: presence-surge 1.7s cubic-bezier(.3,0,.2,1) both; }
+@keyframes presence-surge {
+  0% { transform: translateY(-15%) scale(1.5); opacity: 0.7; }
+  35% { transform: translateY(-10%) scale(1.72) rotate(-2deg); opacity: 1; }
+  70% { transform: translateY(-11%) scale(1.7) rotate(-1.5deg); opacity: 0.95; }
+  100% { transform: translateY(-15%) scale(1.5); opacity: 0.6; }
 }
 
 /* ───────── Figura de fondo importada (aparición fantasmal) ───────── */
@@ -255,7 +256,6 @@
   transform: translate(-50%, -50%);
   border-radius: 50%;
   background: radial-gradient(circle, #fff 0%, #fff 12%, var(--lc) 32%, color-mix(in srgb, var(--lc) 35%, transparent) 55%, transparent 72%);
-  mix-blend-mode: screen;
   animation: light-pulse 2.6s ease-in-out infinite;
 }
 .light-point::before, .light-point::after {

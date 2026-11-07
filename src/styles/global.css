@@ -56,16 +56,18 @@ input, select { font: inherit; color: inherit; -webkit-user-select: auto; user-s
   pointer-events: none;
 }
 .route-ruta1::before {
-  /* Stark: retícula tecnológica que se desplaza despacio */
+  /* Stark: retícula tecnológica; se mueve con transform (sin repintar) */
+  inset: -34px 0 0 -34px;
   background-image:
     linear-gradient(rgba(92, 200, 255, 0.07) 1px, transparent 1px),
     linear-gradient(90deg, rgba(92, 200, 255, 0.07) 1px, transparent 1px);
   background-size: 34px 34px;
   -webkit-mask-image: radial-gradient(ellipse 70% 45% at 50% 28%, #000 0%, transparent 100%);
   mask-image: radial-gradient(ellipse 70% 45% at 50% 28%, #000 0%, transparent 100%);
+  will-change: transform;
   animation: grid-drift 24s linear infinite;
 }
-@keyframes grid-drift { to { background-position: 0 34px, 34px 0; } }
+@keyframes grid-drift { from { transform: translate(0, 0); } to { transform: translate(34px, 34px); } }
 .route-ruta2::before {
   /* Jujutsu: bruma violeta que respira */
   background:

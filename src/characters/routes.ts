@@ -37,7 +37,17 @@ export type EffectKind =
   | 'explosions'// explosiones en el contorno con humo y chispas
   | 'decay'     // fragmentos que se desintegran desde la figura
   | 'cracks'    // grietas de energía que se abren por el suelo
-  | 'presence'; // sombra enorme que respira detrás de la figura (o la figura de fondo importada)
+  | 'presence'  // sombra enorme que respira detrás de la figura (o la figura de fondo importada)
+  // ── Momentos de técnica por personaje ──
+  | 'harden'    // endurecimiento: el contorno se ilumina como roca/metal y saltan esquirlas
+  | 'phase'     // permeación: la figura se vuelve translúcida, se hunde y reaparece
+  | 'wings'     // plumas que salen disparadas en abanico y vuelven
+  | 'inferno'   // estallido de fuego que envuelve la figura
+  | 'smash'     // golpe a máxima potencia: oscuridad, viento y onda
+  | 'decaywave' // oleada de desintegración desde el contorno
+  | 'iaido'     // un único corte de katana, limpio, que cruza la pantalla
+  | 'purelove'  // la energía se concentra en la figura y se libera de golpe
+  | 'gather';   // (interno) partículas que convergen hacia el centro
 
 /** Cómo se mueve la figura en reposo. */
 export type MotionStyle =
@@ -138,8 +148,9 @@ export const ROUTES: RouteConfig[] = [
       L(6, 'Hiromi Higuruma', '#ffd166', '#fff4c2', ['verdict', 'starburst'], 'calm', 'divine', false, f(1.2, 10)),
       // Pura velocidad: copias fantasma y destellos de filo.
       L(7, 'Toji Fushiguro', '#b8c2cf', '#6b4c7a', ['afterimage', 'starburst'], 'agile', 'glow', false, f(2.0, 15)),
-      // Presencia enorme a su espalda, pulsos de energía y destellos de filo.
-      L(8, 'Yuta Okkotsu', '#bfe3ff', '#0b1030', ['presence', 'pulse', 'starburst'], 'calm', 'dark', false, f(1.3, 12)),
+      // Presencia enorme a su espalda que se asoma cuando concentra energía y la libera;
+      // cortes de katana limpios y energía maldita densa a su alrededor.
+      L(8, 'Yuta Okkotsu', '#bfe3ff', '#0b1030', ['presence', 'purelove', 'iaido', 'shadow'], 'calm', 'dark', false, f(1.3, 12)),
       // Ráfagas de tajos por toda la pantalla y fuego.
       L(9, 'Sukuna', '#ff2e4d', '#3b0a12', ['slashes', 'flames'], 'menace', 'fire', false, f(2.3, 12)),
       // Ondas de barrera y orbes azul y rojo que se fusionan en violeta.
@@ -151,16 +162,26 @@ export const ROUTES: RouteConfig[] = [
     number: 3,
     name: 'Ruta Héroes',
     levels: [
-      L(1, 'Kirishima — Red Riot', '#ff5a4f', '#c9d0dd', ['sparks', 'starburst'], 'heavy', 'glow', true, f(1.4, 15)),
+      // Endurecimiento: cada pocos segundos el contorno se ilumina como roca pulida y saltan esquirlas.
+      L(1, 'Kirishima — Red Riot', '#ff5a4f', '#c9d0dd', ['harden', 'sparks'], 'heavy', 'glow', true, f(1.4, 15)),
+      // Frío y calor: fuego en su lado derecho, escarcha cayendo por el izquierdo.
       L(2, 'Shoto Todoroki', '#ff6b3d', '#7fd6ff', ['dual', 'flames', 'frost'], 'calm', 'glow', false, f(1.4, 15)),
-      L(3, 'Mirio Togata — Lemillion', '#ffd166', '#9fd8ff', ['afterimage', 'ripples'], 'agile', 'glow', false, f(1.4, 15)),
-      L(4, 'Hawks', '#e0413a', '#ffb067', ['feathers', 'streaks'], 'hover', 'glow', false, f(1.4, 15)),
-      L(5, 'Endeavor', '#ff7a1a', '#ffd166', ['flames', 'embers'], 'heavy', 'fire', false, f(1.4, 15)),
-      L(6, 'Dabi', '#4fb3ff', '#1d2b6b', ['flames', 'decay'], 'menace', 'fire', false, f(1.4, 15)),
+      // Permeación: se vuelve translúcido, se hunde y reaparece con una onda; copias al moverse.
+      L(3, 'Mirio Togata — Lemillion', '#ffd166', '#9fd8ff', ['phase', 'afterimage'], 'agile', 'glow', false, f(1.4, 15)),
+      // Alas feroces: plumas-cuchilla que salen en abanico desde su espalda y vuelven.
+      L(4, 'Hawks', '#e0413a', '#ffb067', ['wings', 'streaks'], 'hover', 'glow', false, f(1.4, 15)),
+      // Llamas infernales: fuego constante y estallidos que lo envuelven.
+      L(5, 'Endeavor', '#ff7a1a', '#ffd166', ['flames', 'inferno'], 'heavy', 'fire', false, f(1.4, 15)),
+      // Llamas azules que le queman: fuego azul, estallidos y ceniza que se desprende.
+      L(6, 'Dabi', '#4fb3ff', '#1d2b6b', ['flames', 'inferno', 'decay'], 'menace', 'fire', false, f(1.4, 15)),
+      // Explosiones en cadena desde el contorno, con humo.
       L(7, 'Bakugo — Máximo potencial', '#ff8a3d', '#ffd166', ['explosions', 'smoke'], 'agile', 'fire', false, f(1.4, 15)),
-      L(8, 'All Might — Prime', '#ffd166', '#3c7dff', ['stomp', 'pulse'], 'heavy', 'divine', false, f(1.4, 15)),
-      L(9, 'Shigaraki — Forma final', '#c7c9cf', '#3a2a4a', ['decay', 'shadow'], 'menace', 'dark', false, f(1.4, 15)),
-      L(10, 'Deku — Máximo potencial', '#5ee0a8', '#c6f36b', ['lightning', 'sparks', 'pulse'], 'agile', 'electric', false, f(1.4, 15))
+      // Smash: carga, la escena se oscurece, onda enorme y ráfaga de viento.
+      L(8, 'All Might — Prime', '#ffd166', '#3c7dff', ['smash', 'dust'], 'heavy', 'divine', false, f(1.4, 15)),
+      // Desintegración: fragmentos constantes y oleadas que se deshacen desde su contorno.
+      L(9, 'Shigaraki — Forma final', '#c7c9cf', '#3a2a4a', ['decay', 'decaywave'], 'menace', 'dark', false, f(1.4, 15)),
+      // Full Cowl: rayos verdes por toda la silueta y smash final.
+      L(10, 'Deku — Máximo potencial', '#5ee0a8', '#c6f36b', ['lightning', 'smash', 'sparks'], 'agile', 'electric', false, f(1.4, 15))
     ]
   }
 ];

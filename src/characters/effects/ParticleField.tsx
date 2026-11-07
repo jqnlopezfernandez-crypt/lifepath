@@ -6,6 +6,9 @@ import { edgePointsOnStage, type Silhouette } from '../silhouette';
 // Si hay silueta, las partículas nacen del contorno real del personaje
 // y los rayos recorren su borde. La intensidad crece con el nivel.
 
+/** Momentos que afectan a la propia figura (los gestiona el escenario). */
+export type Cue = 'phase' | 'surge';
+
 interface Props {
   effects: EffectKind[];
   accent: string;
@@ -16,6 +19,8 @@ interface Props {
   burstKey?: number;
   /** Se llama en los impactos fuertes (para sacudir la figura). */
   onImpact?: (strength: number) => void;
+  /** Momentos especiales sobre la figura (permeación, presencia que se asoma…). */
+  onCue?: (cue: Cue) => void;
 }
 
 interface P {
@@ -39,17 +44,18 @@ interface Bolt { pts: { x: number; y: number }[]; life: number; max: number; col
 const BASE_COUNT: Record<EffectKind, number> = {
   embers: 34, sparks: 14, frost: 22, shadow: 14, lightning: 0, drops: 26,
   streaks: 10, orbit: 18, dust: 18, smoke: 9, feathers: 9, cosmic: 26,
-  mist: 12, flames: 28, decay: 44,
+  mist: 12, flames: 20, decay: 44,
   // Los efectos de técnica son eventos, no partículas continuas.
   orbs: 0, ripples: 0, slashes: 0, blackflash: 0, beam: 0, pool: 0, pulse: 0, starburst: 0, afterimage: 0, verdict: 0,
-  scan: 0, hex: 70, stomp: 0, stones: 0, dual: 0, explosions: 0, cracks: 0, presence: 0
+  scan: 0, hex: 70, stomp: 0, stones: 0, dual: 0, explosions: 0, cracks: 0, presence: 0,
+  harden: 0, phase: 0, wings: 14, inferno: 0, smash: 0, decaywave: 0, iaido: 0, purelove: 0, gather: 0
 };
 
 const STONE_COLORS = ['#b04bff', '#3f8cff', '#ff3b3b', '#ff9a2e', '#3fe07a', '#ffd23f'];
 
 /** Eventos con duración propia (ondas, cortes, haces, destellos…). */
 interface Ev {
-  type: 'ripple' | 'slash' | 'beam' | 'pulse' | 'star' | 'flash' | 'implode' | 'vignette' | 'spot' | 'shock' | 'scan' | 'crack';
+  type: 'ripple' | 'slash' | 'beam' | 'pulse' | 'star' | 'flash' | 'implode' | 'vignette' | 'spot' | 'shock' | 'scan' | 'crack' | 'rim';
   pts?: { x: number; y: number }[];
   x: number; y: number;
   x2: number; y2: number;
@@ -96,11 +102,13 @@ function glowSprite(color: string, soft = false): HTMLCanvasElement {
   return c;
 }
 
-export function ParticleField({ effects, accent, accent2, intensity, silhouette, framing, burstKey, onImpact }: Props) {
+export function ParticleField({ effects, accent, accent2, intensity, silhouette, framing, burstKey, onImpact, onCue }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const burstRef = useRef(0);
   const impactRef = useRef(onImpact);
   impactRef.current = onImpact;
+  const cueRef = useRef(onCue);
+  cueRef.current = onCue;
 
   useEffect(() => {
     if (burstKey) burstRef.current++;
@@ -116,7 +124,7 @@ export function ParticleField({ effects, accent, accent2, intensity, silhouette,
     let edges: { x: number; y: number }[] = [];
     let traced: { x: number; y: number; a: number }[] = [];
     let groundY = 0;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
 
     const resize = () => {
       const r = canvas.getBoundingClientRect();
@@ -231,6 +239,26 @@ export function ParticleField({ effects, accent, accent2, intensity, silhouette,
           p.color = pick([accent, accent2, '#e8fbff']);
           break;
         }
+        case 'wings': {
+          // Pluma-cuchilla: sale de la espalda en abanico, frena y vuelve.
+          const ox = cx() + rand(-W * 0.08, W * 0.08), oy = cy() - H * 0.1;
+          const a = rand(-Math.PI * 0.95, -Math.PI * 0.05) + (Math.random() < 0.3 ? Math.PI * 0.55 * (Math.random() < 0.5 ? 1 : -1) : 0);
+          const sp = rand(260, 430) * k;
+          p.x = ox; p.y = oy; p.tx = ox; p.ty = oy;
+          p.vx = Math.cos(a) * sp; p.vy = Math.sin(a) * sp;
+          p.size = rand(5, 9) * k; p.max = rand(1.6, 2.4);
+          p.color = pick([accent, accent, accent2]);
+          break;
+        }
+        case 'gather': {
+          // Energía que llega desde fuera y converge en la figura.
+          const a = rand(0, Math.PI * 2), d = Math.max(W, H) * rand(0.45, 0.7);
+          p.tx = cx() + rand(-12, 12); p.ty = cy() - H * 0.05 + rand(-12, 12);
+          p.x = p.tx + Math.cos(a) * d; p.y = p.ty + Math.sin(a) * d;
+          p.size = rand(1.4, 2.6) * k; p.max = rand(0.9, 1.3);
+          p.color = pick([accent, '#ffffff', accent2]);
+          break;
+        }
         case 'decay': {
           // Fragmentos que se desprenden de la figura y se deshacen al subir.
           const s = fromEdge();
@@ -242,10 +270,11 @@ export function ParticleField({ effects, accent, accent2, intensity, silhouette,
           break;
         }
         case 'flames': {
-          const s = dualMode ? fromSide(true) : fromEdge(true);
-          p.x = s.x + rand(-3, 3); p.y = s.y;
-          p.vx = rand(-8, 8); p.vy = rand(-75, -40) * k;
-          p.size = rand(7, 15) * k; p.max = rand(0.55, 1.05);
+          // Lenguas de fuego de tamaño y ritmo muy variados, desde todo el contorno.
+          const s = dualMode ? fromSide(true) : fromEdge();
+          p.x = s.x + rand(-6, 6); p.y = s.y;
+          p.vx = rand(-12, 12); p.vy = rand(-85, -35) * k;
+          p.size = rand(4, 14) * k * (Math.random() < 0.2 ? 1.5 : 1); p.max = rand(0.4, 1.1);
           break;
         }
         case 'mist':
@@ -348,7 +377,8 @@ export function ParticleField({ effects, accent, accent2, intensity, silhouette,
     const events: Ev[] = [];
     const timers = {
       ripple: 0.3, slash: rand(0.8, 1.5), black: rand(1.2, 2.5), beam: rand(0.8, 2), pulse: 0.6, star: rand(0.3, 0.9), verdict: 1.2,
-      scan: 0.8, stomp: 1.5, explosion: rand(0.6, 1.4), crack: 1.2
+      scan: 0.8, stomp: 1.5, explosion: rand(0.6, 1.4), crack: 1.2,
+      harden: rand(1.5, 3), phase: rand(2.5, 4), inferno: rand(2, 3.5), smash: rand(2.5, 4), decaywave: rand(2, 3.5), iaido: rand(1.5, 3), purelove: rand(3, 5)
     };
     // Gemas en órbita
     let stonesAngle = 0, stonesClock = 0;
@@ -434,6 +464,110 @@ export function ParticleField({ effects, accent, accent2, intensity, silhouette,
       });
     };
 
+    // ── Momentos de técnica por personaje ──
+
+    // Endurecimiento: el contorno entero se ilumina como roca pulida y saltan esquirlas.
+    const harden = () => {
+      ev({ type: 'rim', x: 0, y: 0, size: 1, max: 0.7, color: '#ffffff' });
+      later(0.05, () => ev({ type: 'rim', x: 0, y: 0, size: 1, max: 0.9, color: accent }));
+      for (let i = 0; i < 16; i++) {
+        const p = spawn('sparks');
+        const s = fromEdge(true);
+        p.x = s.x; p.y = s.y;
+        const a = Math.atan2(s.y - cy(), s.x - cx()) + rand(-0.5, 0.5), sp = rand(120, 260);
+        p.vx = Math.cos(a) * sp; p.vy = Math.sin(a) * sp - 60; p.color = pick(['#e8ecf2', '#b8c2cf', accent]);
+        particles.push(p);
+      }
+      impactRef.current?.(0.6);
+    };
+
+    // Permeación: la figura atraviesa la materia y reaparece con una onda.
+    const phase = () => {
+      cueRef.current?.('phase');
+      ev({ type: 'ripple', x: cx(), y: cy(), size: W * 0.5, max: 1.2, color: accent2 });
+      later(1.2, () => {
+        ev({ type: 'shock', x: cx(), y: cy(), size: W * 0.6, max: 0.6, color: accent });
+        ev({ type: 'flash', x: cx(), y: cy(), size: 70 * k, max: 0.35, color: accent });
+      });
+    };
+
+    // Estallido de fuego que envuelve la figura.
+    const inferno = () => {
+      ev({ type: 'flash', x: cx(), y: cy(), size: 150 * k, max: 0.7, color: accent });
+      ev({ type: 'shock', x: cx(), y: cy(), size: W * 0.7, max: 0.6, color: accent });
+      for (let i = 0; i < Math.round(36 * intensity); i++) {
+        const p = spawn('flames');
+        p.vy *= 1.8; p.vx = rand(-40, 40); p.size *= 1.35; p.max *= 1.2;
+        particles.push(p);
+      }
+      for (let i = 0; i < 18; i++) particles.push(spawn('embers'));
+      impactRef.current?.(0.6);
+    };
+
+    // Golpe a máxima potencia: carga, oscuridad, onda enorme y ráfaga de viento.
+    const smash = () => {
+      ev({ type: 'implode', x: cx(), y: cy(), size: 90 * k, max: 0.28, color: accent });
+      later(0.28, () => {
+        ev({ type: 'vignette', x: cx(), y: cy(), size: Math.max(W, H), max: 0.45, color: accent });
+        ev({ type: 'flash', x: cx(), y: cy(), size: 160 * k, max: 0.55, color: '#ffffff' });
+        ev({ type: 'shock', x: cx(), y: cy(), size: W * 1.1, max: 0.8, color: accent });
+        later(0.1, () => ev({ type: 'shock', x: cx(), y: cy(), size: W * 0.8, max: 0.7, color: accent2 }));
+        for (let i = 0; i < 26; i++) {
+          const p = spawn('streaks');
+          const dir = i % 2 ? 1 : -1;
+          p.x = cx() + rand(-20, 20); p.y = cy() + rand(-H * 0.3, H * 0.3);
+          p.vx = dir * rand(600, 950); p.vy = rand(-30, 30); p.max = rand(0.35, 0.6);
+          particles.push(p);
+        }
+        for (let i = 0; i < 20; i++) {
+          const p = spawn('dust');
+          p.x = cx() + rand(-W * 0.3, W * 0.3);
+          p.vx = rand(-160, 160); p.vy = rand(-90, -20); p.size *= 1.4;
+          particles.push(p);
+        }
+        impactRef.current?.(1.3);
+      });
+    };
+
+    // Oleada de desintegración desde el contorno.
+    const decayWave = () => {
+      ev({ type: 'vignette', x: cx(), y: cy(), size: Math.max(W, H), max: 0.5, color: accent2 });
+      ev({ type: 'rim', x: 0, y: 0, size: 1, max: 0.8, color: '#d9dbe0' });
+      for (let i = 0; i < 70; i++) {
+        const p = spawn('decay');
+        const a = Math.atan2(p.y - cy(), p.x - cx());
+        const sp = rand(60, 200);
+        p.vx = Math.cos(a) * sp; p.vy = Math.sin(a) * sp - 30; p.max = rand(1, 2);
+        particles.push(p);
+      }
+      impactRef.current?.(0.4);
+    };
+
+    // Un único corte de katana: limpio, preciso, cruzando toda la pantalla.
+    const iaido = () => {
+      const a = rand(-0.5, 0.5) + (Math.random() < 0.5 ? 0 : Math.PI);
+      const len = Math.hypot(W, H) * 1.3;
+      const x = cx() + rand(-W * 0.1, W * 0.1), y = cy() + rand(-H * 0.15, H * 0.1);
+      ev({ type: 'vignette', x, y, size: Math.max(W, H), max: 0.12, color: '#ffffff' });
+      ev({ type: 'slash', x: x - Math.cos(a) * len / 2, y: y - Math.sin(a) * len / 2, x2: x + Math.cos(a) * len / 2, y2: y + Math.sin(a) * len / 2, size: 0.65, max: 0.55, color: accent });
+      later(0.06, () => ev({ type: 'star', x, y, size: 26 * k, max: 0.6, color: '#ffffff' }));
+      impactRef.current?.(0.35);
+    };
+
+    // La energía se concentra en la figura (la presencia se asoma) y se libera de golpe.
+    const pureLove = () => {
+      cueRef.current?.('surge');
+      for (let i = 0; i < 60; i++) later(i * 0.018, () => particles.push(spawn('gather')));
+      ev({ type: 'vignette', x: cx(), y: cy(), size: Math.max(W, H), max: 1.4, color: accent2 });
+      later(1.3, () => {
+        ev({ type: 'flash', x: cx(), y: cy() - H * 0.05, size: 120 * k, max: 0.7, color: '#ffffff' });
+        ev({ type: 'flash', x: cx(), y: cy() - H * 0.05, size: 150 * k, max: 1, color: accent });
+        ev({ type: 'shock', x: cx(), y: cy(), size: W * 1.1, max: 0.9, color: accent });
+        later(0.14, () => ev({ type: 'shock', x: cx(), y: cy(), size: W * 0.8, max: 0.8, color: accent2 }));
+        impactRef.current?.(1.1);
+      });
+    };
+
     // Orbes: orbitan, convergen y estallan.
     let orbAngle = 0, orbClock = 0, orbFired = false;
     const ORB_PERIOD = 8 - intensity * 1.6;
@@ -515,6 +649,13 @@ export function ParticleField({ effects, accent, accent2, intensity, silhouette,
         for (let i = 0; i < n; i++) later(i * rand(0.05, 0.11), screenCut);
         timers.slash = rand(1.3, 2.6) / Math.sqrt(intensity);
       }
+      if (has('harden') && (timers.harden -= dt) <= 0) { harden(); timers.harden = rand(3.2, 5); }
+      if (has('phase') && (timers.phase -= dt) <= 0) { phase(); timers.phase = rand(5, 7); }
+      if (has('inferno') && (timers.inferno -= dt) <= 0) { inferno(); timers.inferno = rand(4, 6); }
+      if (has('smash') && (timers.smash -= dt) <= 0) { smash(); timers.smash = rand(5, 7); }
+      if (has('decaywave') && (timers.decaywave -= dt) <= 0) { decayWave(); timers.decaywave = rand(4, 6); }
+      if (has('iaido') && (timers.iaido -= dt) <= 0) { iaido(); timers.iaido = rand(3, 4.5); }
+      if (has('purelove') && (timers.purelove -= dt) <= 0) { pureLove(); timers.purelove = rand(8, 10); }
       if (has('verdict') && (timers.verdict -= dt) <= 0) {
         verdict();
         timers.verdict = rand(4, 6);
@@ -668,6 +809,19 @@ export function ParticleField({ effects, accent, accent2, intensity, silhouette,
             p.x += p.vx * dt; p.y += p.vy * dt;
             if (!p.bounced && p.y > groundY) { p.y = groundY; p.vy *= -0.35; p.vx *= 0.6; p.bounced = true; }
             break;
+          case 'wings': {
+            if (t < 0.45) {
+              p.vx *= 1 - 2.2 * dt; p.vy *= 1 - 2.2 * dt;
+            } else {
+              // Vuelven a la espalda, cada vez más rápido.
+              const dx = (p.tx ?? cx()) - p.x, dy = (p.ty ?? cy()) - p.y;
+              const d = Math.hypot(dx, dy) || 1;
+              p.vx += (dx / d) * 900 * dt; p.vy += (dy / d) * 900 * dt;
+              p.vx *= 1 - 1.2 * dt; p.vy *= 1 - 1.2 * dt;
+            }
+            p.x += p.vx * dt; p.y += p.vy * dt;
+            break;
+          }
           case 'feathers':
             p.angle += Math.sin(time * 1.5 + p.seed) * 1.5 * dt;
             p.vx = Math.sin(time * 1.8 + p.seed) * 34;
@@ -688,6 +842,20 @@ export function ParticleField({ effects, accent, accent2, intensity, silhouette,
           case 'shadow':
           case 'mist':
             break; // ya dibujados en la capa 1
+          case 'wings': {
+            // Pluma alargada en la dirección del vuelo, con estela.
+            const ang = Math.atan2(p.vy, p.vx);
+            const sp = Math.min(1, Math.hypot(p.vx, p.vy) / 400);
+            ctx.save();
+            ctx.translate(p.x, p.y); ctx.rotate(ang);
+            ctx.globalAlpha = 0.9 * fade;
+            ctx.drawImage(glowSprite(p.color), -p.size * (1.6 + sp * 2.5), -p.size * 0.32, p.size * (3.2 + sp * 2.5), p.size * 0.64);
+            ctx.globalAlpha = 0.6 * fade;
+            ctx.drawImage(glowSprite('#fff2e8'), -p.size * 0.8, -p.size * 0.12, p.size * 1.6, p.size * 0.24);
+            ctx.restore();
+            break;
+          }
+          case 'gather':
           case 'hex': {
             // Viaje hacia el contorno con frenada final; al llegar, destello breve.
             const tx = p.tx ?? p.x, ty = p.ty ?? p.y;
@@ -963,6 +1131,15 @@ export function ParticleField({ effects, accent, accent2, intensity, silhouette,
           case 'flash':
             drawGlow(e.x, e.y, e.size * (1 + t * 0.8), e.color, 1 - t);
             break;
+          case 'rim': {
+            // Todo el contorno se ilumina a la vez y se apaga.
+            const a = (t < 0.15 ? t / 0.15 : 1 - (t - 0.15) / 0.85) * 0.85;
+            for (let j = 0; j < traced.length; j += 1) {
+              const p = traced[j];
+              drawGlow(p.x, p.y, 4.5, e.color, a);
+            }
+            break;
+          }
           case 'crack': {
             if (!e.pts) break;
             const n = Math.max(2, Math.ceil(e.pts.length * Math.min(1, t / 0.25)));

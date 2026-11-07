@@ -1,11 +1,12 @@
-import { useId, useMemo, useState, type CSSProperties, type PointerEvent } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type PointerEvent } from 'react';
 import { motion, useMotionValue, useSpring, useAnimationControls } from 'framer-motion';
 import { useStore } from '../data/store';
 import { companionKey, imageKey, tierFor, type Framing, type RouteId } from './routes';
-import { ParticleField } from './effects/ParticleField';
+import { ParticleField, type Cue } from './effects/ParticleField';
 import { Emblem } from './Emblem';
 import { useSilhouette } from './useSilhouette';
 import { LightPoints } from './LightPoints';
+import { buildAuraSprites, type AuraSprites } from './auraSprites';
 import './stage.css';
 
 interface Props {
@@ -17,11 +18,10 @@ interface Props {
 }
 
 /**
- * Escenario del personaje. Todo lo que rodea a la figura sale de su propia silueta
- * (aura, contraluz, distorsión, partículas, rayos): luz y materia, no dibujos.
- * La espectacularidad escala por "tiers":
- *  1 (niv. 1–3)  aura ceñida a la silueta y partículas desde el contorno
- *  2 (niv. 4–6)  aura más intensa y densa, más partículas
+ * Escenario del personaje. El aura sale de la propia silueta, precalculada una vez
+ * (ya coloreada y difuminada), y solo se anima su posición y opacidad: fluido en el iPhone.
+ *  1 (niv. 1–3)  aura ceñida y partículas desde el contorno
+ *  2 (niv. 4–6)  aura más intensa, más partículas
  *  3 (niv. 7–9)  + contraluz detrás de la figura, segunda capa de aura, inclinación 3D
  *  4 (niv. 10)   + destellos periódicos y todo al máximo
  */
@@ -34,8 +34,10 @@ export function CharacterStage({ route, level, compact, className }: Props) {
   const tier = tierFor(level);
   const intensity = 0.45 + level * 0.11;
   const [burst, setBurst] = useState(0);
+  const [surge, setSurge] = useState(false);
   const controls = useAnimationControls();
-  const hazeId = `lp-haze-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  const figureControls = useAnimationControls();
+  const sprites = useAuraSprites(compact ? undefined : src, cfg.accent, cfg.accent2, cfg.aura === 'dark');
 
   const { zoom, focusX, focusY } = cfg.framing;
   const framing = useMemo<Framing>(() => ({ zoom, focusX, focusY }), [zoom, focusX, focusY]);
@@ -54,10 +56,25 @@ export function CharacterStage({ route, level, compact, className }: Props) {
   };
   const onLeave = () => { rx.set(0); ry.set(0); };
 
-  // Sacudida en los impactos fuertes (chispazo negro, tajos, pisotones).
+  // Sacudida en los impactos fuertes.
   const onImpact = (strength: number) => {
     const d = 4 + strength * 6;
     controls.start({ x: [0, -d, d * 0.8, -d * 0.5, d * 0.3, 0], y: [0, d * 0.4, -d * 0.3, 0], transition: { duration: 0.32, ease: 'easeOut' } });
+  };
+
+  // Momentos especiales que afectan a la propia figura.
+  const onCue = (cue: Cue) => {
+    if (cue === 'phase') {
+      // Permeación: la figura se vuelve translúcida, se hunde un poco y reaparece.
+      figureControls.start({
+        opacity: [1, 0.18, 0.18, 1],
+        y: [0, 26, 26, 0],
+        transition: { duration: 1.6, times: [0, 0.25, 0.7, 1], ease: 'easeInOut' }
+      });
+    } else if (cue === 'surge') {
+      setSurge(true);
+      window.setTimeout(() => setSurge(false), 1700);
+    }
   };
 
   const onTap = () => {
@@ -73,22 +90,18 @@ export function CharacterStage({ route, level, compact, className }: Props) {
     '--aura-size': 66 + tier * 8,
     '--aura-strength': 14 + tier * 7,
     '--amp': 0.5 + tier * 0.15,
-    '--aura-blur': `${(5 + tier * 3) / Math.max(1, zoom)}px`,
-    '--aura-opacity': 0.45 + tier * 0.11
+    '--aura-opacity': 0.5 + tier * 0.12
   } as CSSProperties;
 
   const maskStyle: CSSProperties | undefined = src
     ? { WebkitMaskImage: `url("${src}")`, maskImage: `url("${src}")` }
     : undefined;
-
-  // Distorsión por calor / energía (fuego y auras oscuras) desde el nivel 2 de espectacularidad.
-  const haze = !compact && !reducedMotion && (cfg.aura === 'fire' || cfg.aura === 'dark');
-  const hazeFilter = haze ? `url(#${hazeId}) blur(var(--aura-blur))` : undefined;
   const presence = !compact && !companion && cfg.effects.includes('presence');
+  const showAura = !compact && sprites;
 
   return (
     <div
-      className={`stage motion-${cfg.motion} aura-${cfg.aura} tier-${tier} ${reducedMotion ? 'reduced' : ''} ${compact ? 'compact' : ''} ${className ?? ''}`}
+      className={`stage motion-${cfg.motion} aura-${cfg.aura} tier-${tier} ${surge ? 'surge' : ''} ${reducedMotion ? 'reduced' : ''} ${compact ? 'compact' : ''} ${className ?? ''}`}
       style={vars}
       onPointerMove={onMove}
       onPointerLeave={onLeave}
@@ -97,17 +110,6 @@ export function CharacterStage({ route, level, compact, className }: Props) {
       role="img"
       aria-label={`${cfg.name}, nivel ${level}`}
     >
-      {haze && (
-        <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true" focusable="false">
-          <filter id={hazeId} x="-25%" y="-25%" width="150%" height="150%">
-            <feTurbulence type="fractalNoise" baseFrequency="0.011 0.042" numOctaves="2" seed="4" result="noise">
-              <animate attributeName="baseFrequency" dur="7s" values="0.011 0.042;0.015 0.058;0.011 0.042" repeatCount="indefinite" />
-            </feTurbulence>
-            <feDisplacementMap in="SourceGraphic" in2="noise" scale={cfg.aura === 'fire' ? 26 : 34} xChannelSelector="R" yChannelSelector="G" />
-          </filter>
-        </svg>
-      )}
-
       <div className="stage-layer">
         {tier >= 4 && <div className="stage-aura second" />}
         <div className="stage-aura" />
@@ -124,37 +126,21 @@ export function CharacterStage({ route, level, compact, className }: Props) {
             {src ? (
               <div className="stage-crop">
                 <div className="stage-zoom" style={{ transform: `scale(${zoom})`, transformOrigin: `${focusX}% ${focusY}%` }}>
-                  {presence && (
+                  {presence && sprites && (
                     <div className="presence">
-                      <div className="presence-glow"><div className="aura-mask" style={maskStyle} /></div>
-                      <div className="presence-body" style={hazeFilter ? { filter: `url(#${hazeId}) blur(3px)` } : undefined}>
-                        <div className="aura-mask" style={maskStyle} />
-                      </div>
+                      <img className="sprite presence-glow" src={sprites.wide} alt="" />
+                      <img className="sprite presence-body" src={sprites.shadow} alt="" />
                     </div>
                   )}
-                  {!compact && (
+                  {showAura && (
                     <>
-                      {tier >= 3 && (
-                        <div className="aura-wrap backlight">
-                          <div className="aura-mask" style={maskStyle} />
-                        </div>
-                      )}
-                      {tier >= 3 && (
-                        <div className="aura-wrap outer">
-                          <div className="aura-mask" style={maskStyle} />
-                        </div>
-                      )}
-                      <div className="aura-wrap base" style={cfg.aura === 'dark' && hazeFilter ? { filter: hazeFilter } : undefined}>
-                        <div className="aura-mask" style={maskStyle} />
-                      </div>
+                      {tier >= 3 && <img className="sprite aura backlight" src={sprites.wide} alt="" />}
+                      {tier >= 3 && <img className="sprite aura outer" src={sprites.wide} alt="" />}
+                      <img className="sprite aura base" src={sprites.base} alt="" />
                       {cfg.aura === 'fire' && (
                         <>
-                          <div className="aura-wrap flame f1" style={hazeFilter ? { filter: hazeFilter } : undefined}>
-                            <div className="aura-mask" style={maskStyle} />
-                          </div>
-                          <div className="aura-wrap flame f2" style={hazeFilter ? { filter: hazeFilter } : undefined}>
-                            <div className="aura-mask" style={maskStyle} />
-                          </div>
+                          <img className="sprite aura flame f1" src={sprites.fire} alt="" />
+                          <img className="sprite aura flame f2" src={sprites.fire} alt="" />
                         </>
                       )}
                     </>
@@ -165,16 +151,16 @@ export function CharacterStage({ route, level, compact, className }: Props) {
                       <img className="stage-img ghost g2" src={src} alt="" draggable={false} />
                     </>
                   )}
-                  <img className="stage-img" src={src} alt="" draggable={false} />
-                  {!compact && (cfg.sweep || tier >= 4) && (
-                    <div className="stage-sweep" style={maskStyle} />
-                  )}
-                  {!compact && cfg.aura === 'electric' && (
-                    <div className="stage-rim" style={maskStyle} />
-                  )}
-                  {cfg.lights && cfg.lights.length > 0 && sil && (
-                    <LightPoints lights={cfg.lights} iw={sil.iw} ih={sil.ih} />
-                  )}
+                  <motion.div className="figure-core" animate={figureControls}>
+                    <img className="stage-img" src={src} alt="" draggable={false} />
+                    {!compact && (cfg.sweep || tier >= 4) && (
+                      <div className="stage-sweep" style={maskStyle}><span className="sweep-band" /></div>
+                    )}
+                    {!compact && cfg.aura === 'electric' && <div className="stage-rim" style={maskStyle} />}
+                    {cfg.lights && cfg.lights.length > 0 && sil && (
+                      <LightPoints lights={cfg.lights} iw={sil.iw} ih={sil.ih} />
+                    )}
+                  </motion.div>
                 </div>
               </div>
             ) : (
@@ -196,9 +182,21 @@ export function CharacterStage({ route, level, compact, className }: Props) {
           framing={framing}
           burstKey={burst}
           onImpact={onImpact}
+          onCue={onCue}
         />
       )}
       {tier >= 4 && !compact && <div className="stage-layer stage-flash" />}
     </div>
   );
+}
+
+function useAuraSprites(src: string | undefined, accent: string, accent2: string, dark: boolean): AuraSprites | null {
+  const [sprites, setSprites] = useState<AuraSprites | null>(null);
+  useEffect(() => {
+    let alive = true;
+    setSprites(null);
+    if (src) buildAuraSprites(src, accent, accent2, dark).then((s) => { if (alive) setSprites(s); });
+    return () => { alive = false; };
+  }, [src, accent, accent2, dark]);
+  return sprites;
 }
